@@ -1,0 +1,30 @@
+{
+  "name": "worm",
+  "version": "1.0.0",
+  "description": "A simple markdown document editor for Fleabox",
+  "main": "app.js",
+  "scripts": {
+    "dev": "fleabox --dev --apps-dir .",
+    "build": "echo 'No build needed for static app'",
+    "test": "playwright test"
+  },
+  "dependencies": {
+    "@milkdown/core": "^7.0.0",
+    "@milkdown/plugin-history": "^7.0.0",
+    "@milkdown/plugin-listener": "^7.0.0",
+    "@milkdown/plugin-upload": "^7.0.0",
+    "@milkdown/preset-commonmark": "^7.0.0",
+    "@milkdown/utils": "^7.0.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.58.1"
+  },
+  "keywords": [
+    "markdown",
+    "editor",
+    "fleabox",
+    "notes"
+  ],
+  "author": "",
+  "license": "MIT"
+}
