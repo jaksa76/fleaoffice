@@ -39,7 +39,7 @@ test.describe('Worm - Editor Page', () => {
     await page.waitForLoadState('networkidle');
     const backBtn = page.locator('a[title="Back to documents"]');
     await backBtn.click();
-    await expect(page).toHaveURL(/index\.html|\/worm\/?$/);
+    await expect(page).toHaveURL(/\/worm\/?$/);
   });
 
   test('should allow typing in title input', async ({ page }) => {

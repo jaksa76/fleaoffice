@@ -64,9 +64,13 @@ class EditorManager {
         const params = new URLSearchParams(window.location.search);
         this.docId = params.get('id');
 
+        // Create a new document if no ID provided
         if (!this.docId) {
-            window.location.href = '/';
-            return;
+            this.docId = `doc-${Date.now()}`;
+            // Update URL without reloading
+            const newUrl = new URL(window.location.href);
+            newUrl.searchParams.set('id', this.docId);
+            window.history.replaceState({}, '', newUrl);
         }
 
         // Load index
@@ -300,7 +304,7 @@ class EditorManager {
             await storage.delete(`/documents/${this.docId}`, true);
 
             // Redirect to home
-            window.location.href = '/';
+            window.location.href = '/worm/';
         } catch (error) {
             console.error('Delete failed:', error);
             this.showSaveStatus('Delete failed', true);

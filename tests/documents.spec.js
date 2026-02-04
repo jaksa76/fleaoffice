@@ -36,7 +36,12 @@ test.describe('Worm - Document List Page', () => {
   test('should create a new document when button is clicked', async ({ page }) => {
     await page.goto('/worm/');
     const newDocBtn = page.locator('#newDocBtn');
-    await newDocBtn.click();
+    
+    // Wait for navigation when clicking the button
+    await Promise.all([
+      page.waitForURL(/editor\.html/),
+      newDocBtn.click()
+    ]);
     
     // Should navigate to editor page
     await expect(page).toHaveURL(/editor\.html/);

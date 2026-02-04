@@ -144,7 +144,7 @@ function renderDocumentList() {
 
     list.innerHTML = currentDocuments.map(doc => `
         <div class="document-card" data-id="${doc.id}">
-            <a href="editor.html?id=${doc.id}" class="document-link">
+            <a href="/worm/editor.html?id=${doc.id}" class="document-link">
                 <h3>${escapeHtml(doc.title)}</h3>
                 <p>${escapeHtml(doc.preview)}</p>
                 <time>${new Date(doc.modified).toLocaleDateString()}</time>
@@ -171,10 +171,17 @@ function renderDocumentList() {
 }
 
 async function createNewDocument() {
-    const doc = docManager.createDocument();
-    docManager.addToIndex(doc);
-    await docManager.saveIndex();
-    window.location.href = `editor.html?id=${doc.id}`;
+    try {
+        const doc = docManager.createDocument();
+        docManager.addToIndex(doc);
+        await docManager.saveIndex();
+        window.location.href = `/worm/editor.html?id=${doc.id}`;
+    } catch (error) {
+        console.error('Failed to create document:', error);
+        // Navigate anyway even if save fails
+        const doc = docManager.createDocument();
+        window.location.href = `/worm/editor.html?id=${doc.id}`;
+    }
 }
 
 async function deleteDocument(docId) {
