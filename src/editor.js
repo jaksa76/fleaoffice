@@ -1,4 +1,13 @@
 // ============================================================================
+// Imports
+// ============================================================================
+
+import { Editor, rootCtx, defaultValueCtx, editorViewCtx } from '@milkdown/core';
+import { commonmark } from '@milkdown/preset-commonmark';
+import { listener, listenerCtx } from '@milkdown/plugin-listener';
+import { nord } from '@milkdown/theme-nord';
+
+// ============================================================================
 // Storage Interface (shared with app.js)
 // ============================================================================
 
@@ -99,11 +108,6 @@ class EditorManager {
     }
 
     async initMilkdown(initialContent = '') {
-        const { Editor, rootCtx, defaultValueCtx, editorViewCtx } = await import('https://cdn.jsdelivr.net/npm/@milkdown/core@7.3.6/+esm');
-        const { commonmark } = await import('https://cdn.jsdelivr.net/npm/@milkdown/preset-commonmark@7.3.6/+esm');
-        const { listener, listenerCtx } = await import('https://cdn.jsdelivr.net/npm/@milkdown/plugin-listener@7.3.6/+esm');
-        const { nord } = await import('https://cdn.jsdelivr.net/npm/@milkdown/theme-nord@7.3.6/+esm');
-        
         this.currentMarkdown = initialContent;
         
         const editor = await Editor.make()

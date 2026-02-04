@@ -4,8 +4,8 @@
   "description": "A simple markdown document editor for Fleabox",
   "main": "app.js",
   "scripts": {
-    "build": "rm -rf dist && mkdir -p dist/worm && cp -r src/* dist/worm/",
-    "dev": "npm run build && fleabox --dev --apps-dir dist",
+    "build": "vite build",
+    "fleabox": "npm run build && fleabox --dev --apps-dir dist",
     "test": "npm run build && playwright test",
     "test:ui": "npm run build && playwright test --ui",
     "test:debug": "npm run build && playwright test --debug",
@@ -13,15 +13,17 @@
     "clean": "rm -rf dist test-results playwright-report test-results.json"
   },
   "dependencies": {
-    "@milkdown/core": "^7.0.0",
+    "@milkdown/core": "^7.18.0",
     "@milkdown/plugin-history": "^7.0.0",
-    "@milkdown/plugin-listener": "^7.0.0",
+    "@milkdown/plugin-listener": "^7.18.0",
     "@milkdown/plugin-upload": "^7.0.0",
-    "@milkdown/preset-commonmark": "^7.0.0",
+    "@milkdown/preset-commonmark": "^7.18.0",
+    "@milkdown/theme-nord": "^7.18.0",
     "@milkdown/utils": "^7.0.0"
   },
   "devDependencies": {
-    "@playwright/test": "^1.58.1"
+    "@playwright/test": "^1.58.1",
+    "vite": "^7.3.1"
   },
   "keywords": [
     "markdown",
