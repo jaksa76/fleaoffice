@@ -4,9 +4,13 @@
   "description": "A simple markdown document editor for Fleabox",
   "main": "app.js",
   "scripts": {
-    "dev": "fleabox --dev --apps-dir .",
-    "build": "echo 'No build needed for static app'",
-    "test": "playwright test"
+    "build": "rm -rf dist && mkdir -p dist/worm && cp -r src/* dist/worm/",
+    "dev": "npm run build && fleabox --dev --apps-dir dist",
+    "test": "npm run build && playwright test",
+    "test:ui": "npm run build && playwright test --ui",
+    "test:debug": "npm run build && playwright test --debug",
+    "test:headed": "npm run build && playwright test --headed",
+    "clean": "rm -rf dist test-results playwright-report test-results.json"
   },
   "dependencies": {
     "@milkdown/core": "^7.0.0",

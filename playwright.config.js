@@ -19,4 +19,11 @@ export default defineConfig({
       use: { ...devices['Desktop Chromium'] },
     },
   ],
+
+  webServer: {
+    command: 'fleabox --dev --apps-dir dist',
+    url: 'http://localhost:3000/worm',
+    reuseExistingServer: !process.env.CI,
+    timeout: 30 * 1000,
+  },
 });
