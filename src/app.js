@@ -19,7 +19,8 @@ const storage = {
             body: JSON.stringify(data)
         });
         if (!response.ok) throw new Error(`Failed to save ${path}`);
-        return response.json();
+        // Fleabox PUT returns empty response, not JSON
+        return true;
     },
 
     async delete(path, recursive = false) {
@@ -104,9 +105,10 @@ class DocumentManager {
     }
 
     async deleteDocument(docId) {
+        // Delete files first, then update index
+        await storage.delete(`/documents/${docId}`, true);
         this.index.documents = this.index.documents.filter(d => d.id !== docId);
         await this.saveIndex();
-        await storage.delete(`/documents/${docId}`, true);
     }
 
     getDocument(docId) {
@@ -186,11 +188,17 @@ async function createNewDocument() {
 
 async function deleteDocument(docId) {
     try {
-        await docManager.deleteDocument(docId);
+        // Optimistically update UI
         currentDocuments = currentDocuments.filter(d => d.id !== docId);
         renderDocumentList();
+        // Then delete from backend
+        await docManager.deleteDocument(docId);
     } catch (error) {
         console.error('Failed to delete document:', error);
+        // Reload to show actual state
+        await docManager.loadIndex();
+        currentDocuments = [...docManager.index.documents];
+        renderDocumentList();
         showError('Failed to delete document');
     }
 }

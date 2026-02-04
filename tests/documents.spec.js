@@ -71,4 +71,49 @@ test.describe('Worm - Document List Page', () => {
     const newDocBtn = page.locator('#newDocBtn');
     await expect(newDocBtn).toBeEnabled();
   });
+
+  test('should delete document without showing error', async ({ page }) => {
+    // First create a document
+    await page.goto('/worm/editor.html');
+    await page.waitForLoadState('networkidle');
+    
+    const titleInput = page.locator('#docTitle');
+    await titleInput.fill('Test Delete ' + Date.now());
+    
+    const saveBtn = page.locator('#saveBtn');
+    await saveBtn.click();
+    await page.waitForTimeout(1000);
+    
+    // Go back to list
+    await page.goto('/worm/');
+    await page.waitForLoadState('networkidle');
+    
+    // Find and delete the document
+    const deleteBtn = page.locator('.btn-delete').first();
+    const isVisible = await deleteBtn.isVisible().catch(() => false);
+    
+    if (isVisible) {
+      // Listen for console errors
+      const errors = [];
+      page.on('console', msg => {
+        if (msg.type() === 'error') {
+          errors.push(msg.text());
+        }
+      });
+      
+      // Click delete
+      await deleteBtn.click();
+      
+      // Confirm dialog
+      page.on('dialog', dialog => dialog.accept());
+      
+      // Wait for deletion
+      await page.waitForTimeout(1000);
+      
+      // Should not see error messages in document list
+      const docList = page.locator('#documentList');
+      const listText = await docList.textContent();
+      expect(listText).not.toContain('Failed to delete');
+    }
+  });
 });

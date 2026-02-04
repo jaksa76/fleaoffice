@@ -19,7 +19,8 @@ const storage = {
             body: JSON.stringify(data)
         });
         if (!response.ok) throw new Error(`Failed to save ${path}`);
-        return response.json();
+        // Fleabox PUT returns empty response, not JSON
+        return true;
     },
 
     async delete(path, recursive = false) {
@@ -87,70 +88,61 @@ class EditorManager {
             document.getElementById('docTitle').value = doc.title || '';
         }
 
-        // Initialize Milkdown
-        await this.initMilkdown();
+        // Load document content first
+        const initialContent = await this.loadDocumentContent();
 
-        // Load document content
-        await this.loadDocument();
+        // Initialize Milkdown with content
+        await this.initMilkdown(initialContent);
 
         // Setup event listeners
         this.setupListeners();
     }
 
-    async initMilkdown() {
-        const { Editor, rootCtx, defaultValueCtx } = window.Milkdown;
-        const { commonmark } = window.Milkdown.PresetCommonmark;
-        const { history } = window.Milkdown.PluginHistory;
-        const { listener, listenerCtx } = window.Milkdown.PluginListener;
-        const { upload, uploadConfig } = window.Milkdown.PluginUpload;
-
-        this.editor = await Editor.make()
+    async initMilkdown(initialContent = '') {
+        const { Editor, rootCtx, defaultValueCtx, editorViewCtx } = await import('https://cdn.jsdelivr.net/npm/@milkdown/core@7.3.6/+esm');
+        const { commonmark } = await import('https://cdn.jsdelivr.net/npm/@milkdown/preset-commonmark@7.3.6/+esm');
+        const { listener, listenerCtx } = await import('https://cdn.jsdelivr.net/npm/@milkdown/plugin-listener@7.3.6/+esm');
+        const { nord } = await import('https://cdn.jsdelivr.net/npm/@milkdown/theme-nord@7.3.6/+esm');
+        
+        this.currentMarkdown = initialContent;
+        
+        const editor = await Editor.make()
             .config((ctx) => {
                 ctx.set(rootCtx, document.getElementById('editor'));
-                ctx.set(defaultValueCtx, '');
+                ctx.set(defaultValueCtx, initialContent);
             })
+            .config(nord)
             .use(commonmark)
-            .use(history)
             .use(listener)
-            .use(upload)
-            .config((ctx) => {
-                // Handle content changes
-                ctx.get(listenerCtx).markdownUpdated(() => {
+            .use((ctx) => {
+                const listener = ctx.get(listenerCtx);
+                listener.markdownUpdated((ctx, markdown, prevMarkdown) => {
+                    this.currentMarkdown = markdown;
                     this.isDirty = true;
                     this.scheduleAutoSave();
                 });
-
-                // Configure image uploader
-                ctx.update(uploadConfig.key, (prev) => ({
-                    ...prev,
-                    uploader: (files) => this.handleImageUpload(files)
-                }));
             })
             .create();
+        
+        this.editor = editor;
+        this.editorViewCtx = editorViewCtx;
     }
 
-    async loadDocument() {
+    async loadDocumentContent() {
         try {
-            const content = await storage.fetchJSON(`/documents/${this.docId}/content.md`);
-            if (content) {
-                // If stored as JSON with content property
-                const markdown = typeof content === 'string' ? content : content.content || '';
-                this.setEditorContent(markdown);
+            const response = await fetch(`/api/worm/data/documents/${this.docId}/content.md`);
+            if (response.ok) {
+                const markdown = await response.text();
+                return markdown;
             }
         } catch (error) {
             console.log('No existing document, starting fresh');
         }
-    }
-
-    setEditorContent(markdown) {
-        const { replaceAll } = window.Milkdown.Utils;
-        this.editor.action(replaceAll(markdown));
-        this.isDirty = false;
+        return '';
     }
 
     async getEditorContent() {
-        const { getMarkdown } = window.Milkdown.Utils;
-        return this.editor.action(getMarkdown());
+        return this.currentMarkdown || '';
     }
 
     async saveDocument() {
@@ -277,7 +269,7 @@ class EditorManager {
             }
         });
 
-        document.getElementById('docTitle').addEventListener('change', () => {
+        document.getElementById('docTitle').addEventListener('input', () => {
             this.isDirty = true;
             this.scheduleAutoSave();
         });
