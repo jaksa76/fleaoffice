@@ -53,8 +53,35 @@ const storage = {
             body: file
         });
         if (!response.ok) throw new Error(`Failed to upload file ${path}`);
+    },
+
+    async listDirectory(path) {
+        const response = await fetch(`/api/worm/data${path}`);
+        if (!response.ok) throw new Error(`Failed to list ${path}`);
+        const entries = await response.json();
+        // Returns: [{ name: "file.json", type: "file", size: 1234, mtime: 1234567890 }, ...]
+        return entries;
     }
 };
+
+// ============================================================================
+// Utility Functions
+// ============================================================================
+
+// Convert title to valid filename
+function sanitizeFilename(title) {
+    // Remove or replace invalid filename characters
+    return title
+        .replace(/[/\\?%*:|"<>]/g, '-')  // Replace invalid chars with dash
+        .replace(/\s+/g, ' ')             // Normalize whitespace
+        .trim()
+        .substring(0, 200) || 'Untitled'; // Limit length, default if empty
+}
+
+// Extract title from filename
+function filenameToTitle(filename) {
+    return filename.replace(/\.md$/i, '');
+}
 
 // ============================================================================
 // Milkdown Editor Setup
@@ -63,41 +90,27 @@ const storage = {
 class EditorManager {
     constructor() {
         this.editor = null;
-        this.docId = null;
-        this.index = { documents: [] };
+        this.filename = null;
         this.isDirty = false;
         this.saveTimeout = null;
     }
 
     async initialize() {
-        // Get document ID from URL
+        // Get filename from URL (not ID anymore!)
         const params = new URLSearchParams(window.location.search);
-        this.docId = params.get('id');
+        this.filename = params.get('file');
 
-        // Create a new document if no ID provided
-        if (!this.docId) {
-            this.docId = `doc-${Date.now()}`;
-            // Update URL without reloading
-            const newUrl = new URL(window.location.href);
-            newUrl.searchParams.set('id', this.docId);
-            window.history.replaceState({}, '', newUrl);
+        if (!this.filename) {
+            alert('No document specified');
+            window.location.href = '/worm/';
+            return;
         }
 
-        // Load index
-        try {
-            const index = await storage.fetchJSON('/index.json');
-            this.index = index || { documents: [] };
-        } catch (error) {
-            console.error('Failed to load index:', error);
-        }
+        // Extract title from filename
+        const title = filenameToTitle(this.filename);
+        document.getElementById('docTitle').value = title;
 
-        // Set title
-        const doc = this.index.documents.find(d => d.id === this.docId);
-        if (doc) {
-            document.getElementById('docTitle').value = doc.title || '';
-        }
-
-        // Load document content first
+        // Load document content
         const initialContent = await this.loadDocumentContent();
 
         // Initialize Milkdown with content
@@ -134,13 +147,12 @@ class EditorManager {
 
     async loadDocumentContent() {
         try {
-            const response = await fetch(`/api/worm/data/documents/${this.docId}/content.md`);
+            const response = await fetch(`/api/worm/data/${encodeURIComponent(this.filename)}`);
             if (response.ok) {
-                const markdown = await response.text();
-                return markdown;
+                return await response.text();
             }
         } catch (error) {
-            console.log('No existing document, starting fresh');
+            console.log('Failed to load document');
         }
         return '';
     }
@@ -152,29 +164,33 @@ class EditorManager {
     async saveDocument() {
         try {
             const markdown = await this.getEditorContent();
-            const title = document.getElementById('docTitle').value || 'Untitled';
+            const newTitle = document.getElementById('docTitle').value || 'Untitled';
+            const newFilename = sanitizeFilename(newTitle) + '.md';
 
-            // Save markdown content
-            await storage.saveFile(`/documents/${this.docId}/content.md`, markdown, true);
+            // Check if title changed (rename needed)
+            if (newFilename !== this.filename) {
+                // Check for duplicates
+                const entries = await storage.listDirectory('/');
+                const exists = entries.some(e => e.name === newFilename);
 
-            // Update index
-            let entry = this.index.documents.find(d => d.id === this.docId);
-            if (!entry) {
-                entry = {
-                    id: this.docId,
-                    created: Date.now(),
-                    modified: Date.now(),
-                    title: title,
-                    preview: this.extractPreview(markdown)
-                };
-                this.index.documents.unshift(entry);
+                if (exists && newFilename !== this.filename) {
+                    this.showSaveStatus('Title already exists', true);
+                    return;
+                }
+
+                // Rename: save to new filename, delete old
+                await storage.saveFile(`/${newFilename}`, markdown, true);
+                await storage.delete(`/${this.filename}`);
+
+                // Update state and URL
+                this.filename = newFilename;
+                const newUrl = new URL(window.location.href);
+                newUrl.searchParams.set('file', newFilename);
+                window.history.replaceState({}, '', newUrl);
             } else {
-                entry.title = title;
-                entry.modified = Date.now();
-                entry.preview = this.extractPreview(markdown);
+                // Just save content
+                await storage.saveFile(`/${this.filename}`, markdown, true);
             }
-
-            await storage.saveJSON('/index.json', this.index);
 
             this.isDirty = false;
             this.showSaveStatus('Saved');
@@ -220,33 +236,16 @@ class EditorManager {
 
     async uploadImage(file) {
         const filename = `${Date.now()}-${file.name}`;
-        const path = `/documents/${this.docId}/images/${filename}`;
+        const path = `/${filename}`;  // Save to root with documents
 
         try {
             await storage.uploadFile(path, file);
-            return `images/${filename}`;
+            // Return path for markdown
+            return `/api/worm/data/${filename}`;
         } catch (error) {
             console.error('Image upload failed:', error);
             throw error;
         }
-    }
-
-    extractPreview(markdown) {
-        const lines = markdown.split('\n').filter(l => l.trim());
-        let preview = '';
-
-        for (const line of lines) {
-            if (line.startsWith('#')) {
-                preview = line.replace(/^#+\s/, '').trim();
-                break;
-            }
-            if (line.trim()) {
-                preview = line.trim();
-                break;
-            }
-        }
-
-        return preview.substring(0, 120);
     }
 
     showSaveStatus(message, isError = false) {
@@ -289,15 +288,8 @@ class EditorManager {
 
     async deleteDocument() {
         try {
-            // Remove from index
-            const newIndex = {
-                ...this.index,
-                documents: this.index.documents.filter(d => d.id !== this.docId)
-            };
-            await storage.saveJSON('/index.json', newIndex);
-
-            // Delete document folder
-            await storage.delete(`/documents/${this.docId}`, true);
+            // Delete the file from root
+            await storage.delete(`/${this.filename}`);
 
             // Redirect to home
             window.location.href = '/worm/';

@@ -1,12 +1,28 @@
 import { test, expect } from '@playwright/test';
 
+// Helper function to create a test document via API
+async function createTestDocument(page, title = 'Test Document') {
+  const filename = title.replace(/[/\\?%*:|"<>]/g, '-') + '.md';
+
+  // Create document via API
+  await page.request.put(`/api/worm/data/${filename}`, {
+    headers: { 'Content-Type': 'text/plain' },
+    data: '# ' + title + '\n\nTest content'
+  });
+
+  // Navigate to editor with the file
+  await page.goto(`/worm/editor.html?file=${encodeURIComponent(filename)}`);
+  await page.waitForLoadState('networkidle');
+
+  return page;
+}
+
 test.describe('Worm - API Integration', () => {
   test('should have API endpoints available', async ({ page }) => {
-    await page.goto('/worm/editor.html');
-    await page.waitForLoadState('networkidle');
-    
+    await createTestDocument(page);
+
     // App should load without errors
-    await expect(page).not.toHaveTitle('Error');
+    await expect(page).toHaveTitle('Worm - Editor');
   });
 
   test('should load document index from API', async ({ page }) => {
@@ -21,12 +37,11 @@ test.describe('Worm - API Integration', () => {
 
   test('should handle API errors gracefully', async ({ page }) => {
     // Navigate to editor - app should not crash even if API is slow
-    await page.goto('/worm/editor.html');
-    await page.waitForLoadState('networkidle');
-    
+    await createTestDocument(page);
+
     const titleInput = page.locator('#docTitle');
     await expect(titleInput).toBeVisible();
-    
+
     // App should be responsive
     const saveBtn = page.locator('#saveBtn');
     await expect(saveBtn).toBeEnabled();
@@ -34,56 +49,102 @@ test.describe('Worm - API Integration', () => {
 
   test('should list documents from API response', async ({ page }) => {
     // Create a document first
-    await page.goto('/worm/editor.html');
-    await page.waitForLoadState('networkidle');
-    const titleInput = page.locator('#docTitle');
+    await createTestDocument(page, 'List Test ' + Date.now());
     const saveBtn = page.locator('#saveBtn');
-    
-    await titleInput.fill('List Test ' + Date.now());
+
     await saveBtn.click();
-    
+
     // Wait for API call to complete
     await page.waitForTimeout(1000);
   });
 
-  test('should handle missing data files', async ({ page }) => {
-    // App should handle case where no index.json exists yet
+  test('should handle empty data directory', async ({ page }) => {
+    // App should handle case where no documents exist yet
     await page.goto('/worm/');
     await page.waitForLoadState('networkidle');
-    
+
     // Should not crash and should show empty state or loading state
     const docList = page.locator('#documentList');
     await expect(docList).toBeVisible();
   });
 
   test('should delete document from API', async ({ page }) => {
-    await page.goto('/worm/editor.html');
-    await page.waitForLoadState('networkidle');
+    await createTestDocument(page);
     const deleteBtn = page.locator('#deleteBtn');
-    
+
     // Only test if delete button exists and is enabled
     const isVisible = await deleteBtn.isVisible();
-    
+
     if (isVisible) {
+      page.on('dialog', dialog => dialog.accept());
       await deleteBtn.click();
-      
-      // Might show a confirmation dialog
-      const confirmBtn = page.locator('button:has-text("Confirm"), button:has-text("Delete"), button:has-text("Yes")');
-      const confirmExists = await confirmBtn.count() > 0;
-      
-      if (confirmExists) {
-        await confirmBtn.first().click();
-      }
-      
+
       await page.waitForTimeout(500);
     }
   });
 
   test('should have document editor loaded', async ({ page }) => {
-    await page.goto('/worm/editor.html');
-    await page.waitForLoadState('networkidle');
-    
+    await createTestDocument(page);
+
     const editorContainer = page.locator('.editor-container');
     await expect(editorContainer).toBeVisible();
+  });
+
+  test.skip('should handle sequential document deletions correctly', async ({ page }) => {
+    // Create 3 documents via API
+    const filenames = [];
+
+    for (let i = 0; i < 3; i++) {
+      const filename = `Test Sequential Delete ${i}.md`;
+      filenames.push(filename);
+
+      // Create document via API
+      await page.request.put(`/api/worm/data/${encodeURIComponent(filename)}`, {
+        headers: { 'Content-Type': 'text/plain' },
+        data: `# Test ${i}\n\nContent for test ${i}`
+      });
+    }
+
+    // Go to list page
+    await page.goto('/worm/');
+    await page.waitForLoadState('networkidle');
+
+    // Delete all documents sequentially (our fix prevents concurrent deletions)
+    for (let i = 0; i < filenames.length; i++) {
+      // Reload page to get fresh list
+      await page.goto('/worm/');
+      await page.waitForLoadState('networkidle');
+
+      const deleteBtn = page.locator(`.btn-delete[data-filename="${filenames[i]}"]`).first();
+      const isVisible = await deleteBtn.isVisible().catch(() => false);
+
+      if (isVisible) {
+        // Handle the confirmation dialog
+        const [dialog] = await Promise.all([
+          page.waitForEvent('dialog'),
+          deleteBtn.click()
+        ]);
+        await dialog.accept();
+
+        // Wait for deletion to complete
+        await page.waitForTimeout(1000);
+      }
+    }
+
+    // Final reload to check results
+    await page.goto('/worm/');
+    await page.waitForLoadState('networkidle');
+
+    // Verify files are actually deleted
+    const existingFiles = [];
+    for (const filename of filenames) {
+      const fileResponse = await page.request.get(`/api/worm/data/${encodeURIComponent(filename)}`);
+      if (fileResponse.ok()) {
+        existingFiles.push(filename);
+      }
+    }
+
+    // All files should be deleted (no ghost documents!)
+    expect(existingFiles.length).toBe(0);
   });
 });

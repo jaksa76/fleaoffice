@@ -36,8 +36,35 @@ const storage = {
             body: content
         });
         if (!response.ok) throw new Error(`Failed to save file ${path}`);
+    },
+
+    async listDirectory(path) {
+        const response = await fetch(`/api/worm/data${path}`);
+        if (!response.ok) throw new Error(`Failed to list ${path}`);
+        const entries = await response.json();
+        // Returns: [{ name: "file.json", type: "file", size: 1234, mtime: 1234567890 }, ...]
+        return entries;
     }
 };
+
+// ============================================================================
+// Utility Functions
+// ============================================================================
+
+// Convert title to valid filename
+function sanitizeFilename(title) {
+    // Remove or replace invalid filename characters
+    return title
+        .replace(/[/\\?%*:|"<>]/g, '-')  // Replace invalid chars with dash
+        .replace(/\s+/g, ' ')             // Normalize whitespace
+        .trim()
+        .substring(0, 200) || 'Untitled'; // Limit length, default if empty
+}
+
+// Extract title from filename
+function filenameToTitle(filename) {
+    return filename.replace(/\.md$/i, '');
+}
 
 // ============================================================================
 // Document Manager
@@ -45,74 +72,38 @@ const storage = {
 
 class DocumentManager {
     constructor() {
-        this.index = { documents: [] };
+        this.documents = [];
     }
 
-    async loadIndex() {
-        const data = await storage.fetchJSON('/index.json');
-        this.index = data || { documents: [] };
-        return this.index;
+    async loadDocuments() {
+        // List all files in root data directory
+        const entries = await storage.listDirectory('/');
+
+        // Filter for .md files only
+        const documents = entries
+            .filter(entry => entry.type === 'file' && entry.name.endsWith('.md'))
+            .map(entry => ({
+                filename: entry.name,
+                title: filenameToTitle(entry.name),
+                modified: entry.mtime,
+                size: entry.size
+            }));
+
+        // Sort by modification time (newest first)
+        documents.sort((a, b) => b.modified - a.modified);
+
+        this.documents = documents;
+        return documents;
     }
 
-    async saveIndex() {
-        await storage.saveJSON('/index.json', this.index);
+    async checkDuplicateTitle(title) {
+        const filename = sanitizeFilename(title) + '.md';
+        const entries = await storage.listDirectory('/');
+        return entries.some(e => e.name === filename);
     }
 
-    createDocument() {
-        const id = `doc-${Date.now()}`;
-        return { id };
-    }
-
-    addToIndex(doc) {
-        const entry = {
-            id: doc.id,
-            title: doc.title || 'Untitled',
-            preview: doc.preview || '',
-            created: Date.now(),
-            modified: Date.now()
-        };
-        this.index.documents.unshift(entry);
-    }
-
-    async updateDocument(docId, title, markdown) {
-        const entry = this.index.documents.find(d => d.id === docId);
-        if (entry) {
-            entry.title = title || 'Untitled';
-            entry.modified = Date.now();
-            entry.preview = this.extractPreview(markdown);
-        }
-        await this.saveIndex();
-    }
-
-    extractPreview(markdown) {
-        // Extract first heading or first line as title preview
-        const lines = markdown.split('\n').filter(l => l.trim());
-        let preview = '';
-        
-        for (const line of lines) {
-            if (line.startsWith('#')) {
-                preview = line.replace(/^#+\s/, '').trim();
-                break;
-            }
-            if (line.trim()) {
-                preview = line.trim();
-                break;
-            }
-        }
-        
-        // Limit to 120 characters
-        return preview.substring(0, 120);
-    }
-
-    async deleteDocument(docId) {
-        // Delete files first, then update index
-        await storage.delete(`/documents/${docId}`, true);
-        this.index.documents = this.index.documents.filter(d => d.id !== docId);
-        await this.saveIndex();
-    }
-
-    getDocument(docId) {
-        return this.index.documents.find(d => d.id === docId);
+    async deleteDocument(filename) {
+        await storage.delete(`/${filename}`);
     }
 }
 
@@ -122,11 +113,12 @@ class DocumentManager {
 
 const docManager = new DocumentManager();
 let currentDocuments = [];
+let deletionInProgress = false;
 
 async function initializePage() {
     try {
-        await docManager.loadIndex();
-        currentDocuments = [...docManager.index.documents];
+        await docManager.loadDocuments();
+        currentDocuments = [...docManager.documents];
         renderDocumentList();
     } catch (error) {
         console.error('Failed to load documents:', error);
@@ -138,20 +130,19 @@ async function initializePage() {
 
 function renderDocumentList() {
     const list = document.getElementById('documentList');
-    
+
     if (currentDocuments.length === 0) {
         list.innerHTML = '<div class="empty-state">No documents yet. Create one to get started.</div>';
         return;
     }
 
     list.innerHTML = currentDocuments.map(doc => `
-        <div class="document-card" data-id="${doc.id}">
-            <a href="/worm/editor.html?id=${doc.id}" class="document-link">
+        <div class="document-card" data-filename="${escapeHtml(doc.filename)}">
+            <a href="/worm/editor.html?file=${encodeURIComponent(doc.filename)}" class="document-link">
                 <h3>${escapeHtml(doc.title)}</h3>
-                <p>${escapeHtml(doc.preview)}</p>
-                <time>${new Date(doc.modified).toLocaleDateString()}</time>
+                <time>${new Date(doc.modified * 1000).toLocaleDateString()}</time>
             </a>
-            <button class="btn-delete" data-id="${doc.id}" title="Delete">
+            <button class="btn-delete" data-filename="${escapeHtml(doc.filename)}" title="Delete">
                 <svg class="icon-small" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <polyline points="3 6 5 6 21 6"/>
                     <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
@@ -162,44 +153,68 @@ function renderDocumentList() {
 
     // Add delete handlers
     list.querySelectorAll('.btn-delete').forEach(btn => {
-        btn.addEventListener('click', (e) => {
+        btn.addEventListener('click', async (e) => {
             e.preventDefault();
-            const docId = btn.dataset.id;
-            if (confirm('Delete this document?')) {
-                deleteDocument(docId);
+            e.stopPropagation();
+            const filename = btn.dataset.filename;
+            const title = filenameToTitle(filename);
+            if (confirm(`Delete "${title}"?`)) {
+                await deleteDocument(filename);
             }
         });
     });
 }
 
 async function createNewDocument() {
+    // Prompt for title
+    const title = prompt('Document title:');
+    if (!title) return; // User cancelled
+
+    const filename = sanitizeFilename(title) + '.md';
+
     try {
-        const doc = docManager.createDocument();
-        docManager.addToIndex(doc);
-        await docManager.saveIndex();
-        window.location.href = `/worm/editor.html?id=${doc.id}`;
+        // Check for duplicates
+        const exists = await docManager.checkDuplicateTitle(title);
+        if (exists) {
+            alert(`A document with the title "${title}" already exists. Please choose a different title.`);
+            return createNewDocument(); // Ask again
+        }
+
+        // Create empty document in root
+        await storage.saveFile(`/${filename}`, '', true);
+
+        // Navigate to editor
+        window.location.href = `/worm/editor.html?file=${encodeURIComponent(filename)}`;
     } catch (error) {
         console.error('Failed to create document:', error);
-        // Navigate anyway even if save fails
-        const doc = docManager.createDocument();
-        window.location.href = `/worm/editor.html?id=${doc.id}`;
+        alert('Failed to create document');
     }
 }
 
-async function deleteDocument(docId) {
+async function deleteDocument(filename) {
+    // Prevent concurrent deletions to avoid race conditions
+    if (deletionInProgress) {
+        return;
+    }
+
     try {
+        deletionInProgress = true;
+
         // Optimistically update UI
-        currentDocuments = currentDocuments.filter(d => d.id !== docId);
+        currentDocuments = currentDocuments.filter(d => d.filename !== filename);
         renderDocumentList();
-        // Then delete from backend
-        await docManager.deleteDocument(docId);
+
+        // Delete file
+        await docManager.deleteDocument(filename);
     } catch (error) {
         console.error('Failed to delete document:', error);
         // Reload to show actual state
-        await docManager.loadIndex();
-        currentDocuments = [...docManager.index.documents];
+        await docManager.loadDocuments();
+        currentDocuments = [...docManager.documents];
         renderDocumentList();
         showError('Failed to delete document');
+    } finally {
+        deletionInProgress = false;
     }
 }
 
