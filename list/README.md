@@ -9,6 +9,6 @@ Instead of fighting with tables and formulas, List lets you create collections o
 - Simple, intuitive interface
 - Mobile-first design
 - Lightweight and fast
-- Data stored locally via Fleabox
+- Data stored via Fleabox
 
 Part of the Fleaoffice Suite - a modern, web-based suite of personal productivity tools.

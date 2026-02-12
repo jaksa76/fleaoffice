@@ -6,10 +6,10 @@ Agenda brings together your calendar events and task lists, recognizing that mee
 
 **Key Features:**
 - Unified view of meetings and tasks
-- Connect tasks to meetings
+- Tasks slide into empty time slots in your calendar
 - Simple, intuitive interface
 - Mobile-first design
 - Lightweight and fast
-- Data stored locally via Fleabox
+- Data stored via Fleabox
 
 Part of the Fleaoffice Suite - a modern, web-based suite of personal productivity tools.
