@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Worm** is a markdown document editor application built for Fleabox, a self-hosted application hub that serves static web apps and stores per-user data as JSON files on the filesystem.
+**Write** is a markdown document editor application built for Fleabox, a self-hosted application hub that serves static web apps and stores per-user data as JSON files on the filesystem.
 
 The application code lives in the `write/` directory.
 
@@ -20,11 +20,11 @@ cd write
 
 - **Build the application**: `npm run build`
   - Uses Vite to bundle the app
-  - Output goes to `dist/worm/` (Fleabox app structure)
+  - Output goes to `dist/write/` (Fleabox app structure)
 
 - **Run development server**: `npm run fleabox`
   - Builds and starts Fleabox in development mode (no auth required)
-  - App available at `http://localhost:3000/worm/`
+  - App available at `http://localhost:3000/write/`
 
 ### Testing
 
@@ -60,7 +60,7 @@ cd write
 
 ### Storage Architecture
 
-Documents are stored as `.md` files directly in the root of the user's data directory (`~/.local/share/fleabox/worm/data/` in production).
+Documents are stored as `.md` files directly in the root of the user's data directory (`~/.local/share/fleabox/write/data/` in production).
 
 **Storage Interface**: Both `app.js` and `editor.js` include a `storage` object that abstracts the Fleabox API:
 
@@ -96,11 +96,11 @@ Documents are stored as `.md` files directly in the root of the user's data dire
 
 ### Endpoints
 
-All requests are prefixed with `/api/worm/data`:
+All requests are prefixed with `/api/write/data`:
 
-- **GET** `/api/worm/data/<path>` - Read file or list directory
-- **PUT** `/api/worm/data/<path>` - Write file (creates parent dirs automatically, 10MB max)
-- **DELETE** `/api/worm/data/<path>?recursive=true` - Delete file or directory
+- **GET** `/api/write/data/<path>` - Read file or list directory
+- **PUT** `/api/write/data/<path>` - Write file (creates parent dirs automatically, 10MB max)
+- **DELETE** `/api/write/data/<path>?recursive=true` - Delete file or directory
 
 ### Authentication
 
@@ -110,9 +110,9 @@ All requests are prefixed with `/api/worm/data`:
 ## Build System
 
 **Vite Configuration** (`vite.config.js`):
-- Base path: `/worm/`
+- Base path: `/write/`
 - Multi-page setup: `index.html` and `editor.html`
-- Custom plugin moves HTML files from `dist/worm/src/` to `dist/worm/` and fixes asset paths
+- Custom plugin moves HTML files from `dist/write/src/` to `dist/write/` and fixes asset paths
 
 **Playwright Configuration** (`playwright.config.js`):
 - Runs tests sequentially (workers: 1)
