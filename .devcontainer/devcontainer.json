@@ -8,7 +8,7 @@
 		"ghcr.io/schlich/devcontainer-features/playwright:0": {},
 		"ghcr.io/devcontainers/features/github-cli:1": {},
 		"ghcr.io/stu-bell/devcontainer-features/claude-code:0": {}
-	}
+	},
 
 	// Features to add to the dev container. More info: https://containers.dev/features.
 	// "features": {},
@@ -17,7 +17,7 @@
 	// "forwardPorts": [],
 
 	// Use 'postCreateCommand' to run commands after the container is created.
-	// "postCreateCommand": "yarn install",
+	"postCreateCommand": "curl -fsSL https://github.com/jaksa76/fleabox/releases/download/v2.0.2/fleabox -o fleabox && chmod +x fleabox && sudo mv fleabox /usr/local/bin/fleabox"
 
 	// Configure tool-specific properties.
 	// "customizations": {},
