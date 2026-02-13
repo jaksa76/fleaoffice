@@ -1,4 +1,4 @@
-# Worm - Implementation Plan
+# Write - Implementation Plan
 
 ## Overview
 A lightweight Markdown-based document editor for Fleabox, similar to a notes app with basic formatting capabilities.
@@ -29,7 +29,7 @@ A lightweight Markdown-based document editor for Fleabox, similar to a notes app
 
 ### File Structure
 ```
-/srv/fleabox/worm/
+/srv/fleabox/write/
 ├── index.html          # Main app page
 ├── editor.html         # Document editor page
 ├── style.css           # Application styles
@@ -41,7 +41,7 @@ A lightweight Markdown-based document editor for Fleabox, similar to a notes app
 
 ### Data Structure
 ```
-~/.local/share/fleabox/worm/data/
+~/.local/share/fleabox/write/data/
 ├── index.json         # Document index/metadata
 └── documents/
     ├── doc-1/
@@ -67,9 +67,9 @@ A lightweight Markdown-based document editor for Fleabox, similar to a notes app
 - `extractPreview(markdown)` - Get title and first few lines
 
 **API Calls**:
-- `GET /api/worm/data/index.json` - Load document list
-- `PUT /api/worm/data/index.json` - Update index
-- `DELETE /api/worm/data/documents/<doc-id>?recursive=true` - Delete document
+- `GET /api/write/data/index.json` - Load document list
+- `PUT /api/write/data/index.json` - Update index
+- `DELETE /api/write/data/documents/<doc-id>?recursive=true` - Delete document
 
 ### 2. Editor Module (`editor.js`)
 **Purpose**: Handle document editing and saving
@@ -90,9 +90,9 @@ A lightweight Markdown-based document editor for Fleabox, similar to a notes app
 - Configure `uploadConfig` with custom uploader function
 
 **API Calls**:
-- `GET /api/worm/data/documents/<doc-id>/content.md` - Load document
-- `PUT /api/worm/data/documents/<doc-id>/content.md` - Save document
-- `PUT /api/worm/data/documents/<doc-id>/images/<filename>` - Upload images
+- `GET /api/write/data/documents/<doc-id>/content.md` - Load document
+- `PUT /api/write/data/documents/<doc-id>/content.md` - Save document
+- `PUT /api/write/data/documents/<doc-id>/images/<filename>` - Upload images
 
 ### 3. Storage Interface
 **Purpose**: Abstract Fleabox API calls
@@ -144,7 +144,7 @@ A lightweight Markdown-based document editor for Fleabox, similar to a notes app
 - Update Markdown with relative paths: `![alt](images/filename.png)`
 - Upload flow:
   1. User drops/pastes image → Milkdown triggers uploader
-  2. Uploader saves to Fleabox API: `PUT /api/worm/data/documents/<doc-id>/images/<filename>`
+  2. Uploader saves to Fleabox API: `PUT /api/write/data/documents/<doc-id>/images/<filename>`
   3. Return relative path: `images/filename.png`
   4. Milkdown inserts image node into document
 

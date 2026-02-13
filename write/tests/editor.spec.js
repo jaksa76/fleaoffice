@@ -5,22 +5,22 @@ async function createTestDocument(page, title = 'Test Document') {
   const filename = title.replace(/[/\\?%*:|"<>]/g, '-') + '.md';
 
   // Create document via API
-  await page.request.put(`/api/worm/data/${filename}`, {
+  await page.request.put(`/api/write/data/${filename}`, {
     headers: { 'Content-Type': 'text/plain' },
     data: '# ' + title + '\n\nTest content'
   });
 
   // Navigate to editor with the file
-  await page.goto(`/worm/editor.html?file=${encodeURIComponent(filename)}`);
+  await page.goto(`/write/editor.html?file=${encodeURIComponent(filename)}`);
   await page.waitForLoadState('networkidle');
 
   return page;
 }
 
-test.describe('Worm - Editor Page', () => {
+test.describe('Write - Editor Page', () => {
   test('should load the editor page', async ({ page }) => {
     await createTestDocument(page);
-    await expect(page).toHaveTitle('Worm - Editor');
+    await expect(page).toHaveTitle('Write - Editor');
   });
 
   test('should display editor title input', async ({ page }) => {
@@ -51,7 +51,7 @@ test.describe('Worm - Editor Page', () => {
     await createTestDocument(page);
     const backBtn = page.locator('a[title="Back to documents"]');
     await backBtn.click();
-    await expect(page).toHaveURL(/\/worm\/?$/);
+    await expect(page).toHaveURL(/\/write\/?$/);
   });
 
   test('should allow typing in title input', async ({ page }) => {
@@ -127,7 +127,7 @@ test.describe('Worm - Editor Page', () => {
   });
 
   test('should load Milkdown editor', async ({ page }) => {
-    await page.goto('/worm/editor.html');
+    await page.goto('/write/editor.html');
     await page.waitForLoadState('networkidle');
     
     // Wait for Milkdown to initialize

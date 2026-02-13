@@ -1,11 +1,11 @@
-# Worm
+# Write
 
 A simple markdown document editor for Fleabox.
 
 ## Project Structure
 
 ```
-worm/
+write/
 ├── src/               # Source files
 │   ├── index.html    # Main documents list page
 │   ├── editor.html   # Document editor page
@@ -14,7 +14,7 @@ worm/
 │   └── style.css     # Styles
 ├── tests/            # Playwright tests
 ├── dist/             # Build output (gitignored)
-│   └── worm/        # Fleabox app structure
+│   └── write/        # Fleabox app structure
 └── package.json
 ```
 
@@ -26,7 +26,7 @@ npm install
 ```
 
 ### Build
-Copies source files to `dist/worm/` for Fleabox:
+Copies source files to `dist/write/` for Fleabox:
 ```bash
 npm run build
 ```
@@ -37,7 +37,7 @@ Builds and starts Fleabox in development mode:
 npm run dev
 ```
 
-The app will be available at: `http://localhost:3000/worm/`
+The app will be available at: `http://localhost:3000/write/`
 
 ### Testing
 Run all tests (automatically builds first):

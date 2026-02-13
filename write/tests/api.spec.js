@@ -5,28 +5,28 @@ async function createTestDocument(page, title = 'Test Document') {
   const filename = title.replace(/[/\\?%*:|"<>]/g, '-') + '.md';
 
   // Create document via API
-  await page.request.put(`/api/worm/data/${filename}`, {
+  await page.request.put(`/api/write/data/${filename}`, {
     headers: { 'Content-Type': 'text/plain' },
     data: '# ' + title + '\n\nTest content'
   });
 
   // Navigate to editor with the file
-  await page.goto(`/worm/editor.html?file=${encodeURIComponent(filename)}`);
+  await page.goto(`/write/editor.html?file=${encodeURIComponent(filename)}`);
   await page.waitForLoadState('networkidle');
 
   return page;
 }
 
-test.describe('Worm - API Integration', () => {
+test.describe('Write - API Integration', () => {
   test('should have API endpoints available', async ({ page }) => {
     await createTestDocument(page);
 
     // App should load without errors
-    await expect(page).toHaveTitle('Worm - Editor');
+    await expect(page).toHaveTitle('Write - Editor');
   });
 
   test('should load document index from API', async ({ page }) => {
-    await page.goto('/worm/');
+    await page.goto('/write/');
     
     // Wait for documents to load from API
     await page.waitForLoadState('networkidle');
@@ -60,7 +60,7 @@ test.describe('Worm - API Integration', () => {
 
   test('should handle empty data directory', async ({ page }) => {
     // App should handle case where no documents exist yet
-    await page.goto('/worm/');
+    await page.goto('/write/');
     await page.waitForLoadState('networkidle');
 
     // Should not crash and should show empty state or loading state
@@ -99,20 +99,20 @@ test.describe('Worm - API Integration', () => {
       filenames.push(filename);
 
       // Create document via API
-      await page.request.put(`/api/worm/data/${encodeURIComponent(filename)}`, {
+      await page.request.put(`/api/write/data/${encodeURIComponent(filename)}`, {
         headers: { 'Content-Type': 'text/plain' },
         data: `# Test ${i}\n\nContent for test ${i}`
       });
     }
 
     // Go to list page
-    await page.goto('/worm/');
+    await page.goto('/write/');
     await page.waitForLoadState('networkidle');
 
     // Delete all documents sequentially (our fix prevents concurrent deletions)
     for (let i = 0; i < filenames.length; i++) {
       // Reload page to get fresh list
-      await page.goto('/worm/');
+      await page.goto('/write/');
       await page.waitForLoadState('networkidle');
 
       const deleteBtn = page.locator(`.btn-delete[data-filename="${filenames[i]}"]`).first();
@@ -132,13 +132,13 @@ test.describe('Worm - API Integration', () => {
     }
 
     // Final reload to check results
-    await page.goto('/worm/');
+    await page.goto('/write/');
     await page.waitForLoadState('networkidle');
 
     // Verify files are actually deleted
     const existingFiles = [];
     for (const filename of filenames) {
-      const fileResponse = await page.request.get(`/api/worm/data/${encodeURIComponent(filename)}`);
+      const fileResponse = await page.request.get(`/api/write/data/${encodeURIComponent(filename)}`);
       if (fileResponse.ok()) {
         existingFiles.push(filename);
       }

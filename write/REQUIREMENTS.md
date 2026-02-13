@@ -1,6 +1,6 @@
-# Worm
+# Write
 
-Worm is a small and simple alternative to MS Word. It allows you to create simple documents with basic formatting options. It uses Markdown as a format for saving documents. It's more like a notes application than a full-fledged word processor.
+Write is a small and simple alternative to MS Word. It allows you to create simple documents with basic formatting options. It uses Markdown as a format for saving documents. It's more like a notes application than a full-fledged word processor.
 
 - uses the Milkdown Markdown editor
 - uses Fleabox for storage and hosting

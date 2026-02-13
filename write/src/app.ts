@@ -2,9 +2,16 @@
 // Storage Interface - Abstracts Fleabox API
 // ============================================================================
 
+interface DirectoryEntry {
+    name: string;
+    type: 'file' | 'directory';
+    size: number;
+    mtime: number;
+}
+
 const storage = {
-    async fetchJSON(path) {
-        const response = await fetch(`/api/worm/data${path}`);
+    async fetchJSON(path: string): Promise<any> {
+        const response = await fetch(`/api/write/data${path}`);
         if (!response.ok) {
             if (response.status === 404) return null;
             throw new Error(`Failed to fetch ${path}`);
@@ -12,8 +19,8 @@ const storage = {
         return response.json();
     },
 
-    async saveJSON(path, data) {
-        const response = await fetch(`/api/worm/data${path}`, {
+    async saveJSON(path: string, data: any): Promise<boolean> {
+        const response = await fetch(`/api/write/data${path}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
@@ -23,14 +30,14 @@ const storage = {
         return true;
     },
 
-    async delete(path, recursive = false) {
+    async delete(path: string, recursive = false): Promise<void> {
         const url = recursive ? `${path}?recursive=true` : path;
-        const response = await fetch(`/api/worm/data${url}`, { method: 'DELETE' });
+        const response = await fetch(`/api/write/data${url}`, { method: 'DELETE' });
         if (!response.ok) throw new Error(`Failed to delete ${path}`);
     },
 
-    async saveFile(path, content, isText = false) {
-        const response = await fetch(`/api/worm/data${path}`, {
+    async saveFile(path: string, content: string | Blob, isText = false): Promise<void> {
+        const response = await fetch(`/api/write/data${path}`, {
             method: 'PUT',
             headers: { 'Content-Type': isText ? 'text/plain' : 'application/octet-stream' },
             body: content
@@ -38,8 +45,8 @@ const storage = {
         if (!response.ok) throw new Error(`Failed to save file ${path}`);
     },
 
-    async listDirectory(path) {
-        const response = await fetch(`/api/worm/data${path}`);
+    async listDirectory(path: string): Promise<DirectoryEntry[]> {
+        const response = await fetch(`/api/write/data${path}`);
         if (!response.ok) throw new Error(`Failed to list ${path}`);
         const entries = await response.json();
         // Returns: [{ name: "file.json", type: "file", size: 1234, mtime: 1234567890 }, ...]
@@ -52,7 +59,7 @@ const storage = {
 // ============================================================================
 
 // Convert title to valid filename
-function sanitizeFilename(title) {
+function sanitizeFilename(title: string): string {
     // Remove or replace invalid filename characters
     return title
         .replace(/[/\\?%*:|"<>]/g, '-')  // Replace invalid chars with dash
@@ -62,7 +69,7 @@ function sanitizeFilename(title) {
 }
 
 // Extract title from filename
-function filenameToTitle(filename) {
+function filenameToTitle(filename: string): string {
     return filename.replace(/\.md$/i, '');
 }
 
@@ -70,12 +77,21 @@ function filenameToTitle(filename) {
 // Document Manager
 // ============================================================================
 
+interface Document {
+    filename: string;
+    title: string;
+    modified: number;
+    size: number;
+}
+
 class DocumentManager {
+    documents: Document[];
+
     constructor() {
         this.documents = [];
     }
 
-    async loadDocuments() {
+    async loadDocuments(): Promise<Document[]> {
         // List all files in root data directory
         const entries = await storage.listDirectory('/');
 
@@ -96,13 +112,13 @@ class DocumentManager {
         return documents;
     }
 
-    async checkDuplicateTitle(title) {
+    async checkDuplicateTitle(title: string): Promise<boolean> {
         const filename = sanitizeFilename(title) + '.md';
         const entries = await storage.listDirectory('/');
         return entries.some(e => e.name === filename);
     }
 
-    async deleteDocument(filename) {
+    async deleteDocument(filename: string): Promise<void> {
         await storage.delete(`/${filename}`);
     }
 }
@@ -112,10 +128,10 @@ class DocumentManager {
 // ============================================================================
 
 const docManager = new DocumentManager();
-let currentDocuments = [];
+let currentDocuments: Document[] = [];
 let deletionInProgress = false;
 
-async function initializePage() {
+async function initializePage(): Promise<void> {
     try {
         await docManager.loadDocuments();
         currentDocuments = [...docManager.documents];
@@ -125,11 +141,11 @@ async function initializePage() {
         showError('Failed to load documents');
     }
 
-    document.getElementById('newDocBtn').addEventListener('click', createNewDocument);
+    document.getElementById('newDocBtn')!.addEventListener('click', createNewDocument);
 }
 
-function renderDocumentList() {
-    const list = document.getElementById('documentList');
+function renderDocumentList(): void {
+    const list = document.getElementById('documentList')!;
 
     if (currentDocuments.length === 0) {
         list.innerHTML = '<div class="empty-state">No documents yet. Create one to get started.</div>';
@@ -138,7 +154,7 @@ function renderDocumentList() {
 
     list.innerHTML = currentDocuments.map(doc => `
         <div class="document-card" data-filename="${escapeHtml(doc.filename)}">
-            <a href="/worm/editor.html?file=${encodeURIComponent(doc.filename)}" class="document-link">
+            <a href="/write/editor.html?file=${encodeURIComponent(doc.filename)}" class="document-link">
                 <h3>${escapeHtml(doc.title)}</h3>
                 <time>${new Date(doc.modified * 1000).toLocaleDateString()}</time>
             </a>
@@ -156,7 +172,7 @@ function renderDocumentList() {
         btn.addEventListener('click', async (e) => {
             e.preventDefault();
             e.stopPropagation();
-            const filename = btn.dataset.filename;
+            const filename = (btn as HTMLElement).dataset.filename!;
             const title = filenameToTitle(filename);
             if (confirm(`Delete "${title}"?`)) {
                 await deleteDocument(filename);
@@ -165,7 +181,7 @@ function renderDocumentList() {
     });
 }
 
-async function createNewDocument() {
+async function createNewDocument(): Promise<void> {
     // Prompt for title
     const title = prompt('Document title:');
     if (!title) return; // User cancelled
@@ -184,14 +200,14 @@ async function createNewDocument() {
         await storage.saveFile(`/${filename}`, '', true);
 
         // Navigate to editor
-        window.location.href = `/worm/editor.html?file=${encodeURIComponent(filename)}`;
+        window.location.href = `/write/editor.html?file=${encodeURIComponent(filename)}`;
     } catch (error) {
         console.error('Failed to create document:', error);
         alert('Failed to create document');
     }
 }
 
-async function deleteDocument(filename) {
+async function deleteDocument(filename: string): Promise<void> {
     // Prevent concurrent deletions to avoid race conditions
     if (deletionInProgress) {
         return;
@@ -218,12 +234,12 @@ async function deleteDocument(filename) {
     }
 }
 
-function showError(message) {
-    const list = document.getElementById('documentList');
+function showError(message: string): void {
+    const list = document.getElementById('documentList')!;
     list.innerHTML = `<div class="error">${escapeHtml(message)}</div>`;
 }
 
-function escapeHtml(text) {
+function escapeHtml(text: string): string {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;

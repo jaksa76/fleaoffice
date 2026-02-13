@@ -1,31 +1,31 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('Worm - Document List Page', () => {
+test.describe('Write - Document List Page', () => {
   test('should load the main page', async ({ page }) => {
-    await page.goto('/worm/');
-    await expect(page).toHaveTitle('Worm - Documents');
+    await page.goto('/write/');
+    await expect(page).toHaveTitle('Write - Documents');
   });
 
-  test('should display the Worm header', async ({ page }) => {
-    await page.goto('/worm/');
+  test('should display the Write header', async ({ page }) => {
+    await page.goto('/write/');
     const header = page.locator('h1');
-    await expect(header).toContainText('Worm');
+    await expect(header).toContainText('Write');
   });
 
   test('should display new document button', async ({ page }) => {
-    await page.goto('/worm/');
+    await page.goto('/write/');
     const newDocBtn = page.locator('#newDocBtn');
     await expect(newDocBtn).toBeVisible();
   });
 
   test('should have document list container', async ({ page }) => {
-    await page.goto('/worm/');
+    await page.goto('/write/');
     const docList = page.locator('#documentList');
     await expect(docList).toBeVisible();
   });
 
   test('should display loading state initially', async ({ page }) => {
-    await page.goto('/worm/');
+    await page.goto('/write/');
     const loading = page.locator('.loading');
     // Wait for documents to load or confirm loading state appears
     await expect(loading).toBeVisible({ timeout: 1000 }).catch(() => {
@@ -34,7 +34,7 @@ test.describe('Worm - Document List Page', () => {
   });
 
   test.skip('should create a new document when button is clicked', async ({ page }) => {
-    await page.goto('/worm/');
+    await page.goto('/write/');
     await page.waitForLoadState('networkidle');
 
     const newDocBtn = page.locator('#newDocBtn');
@@ -54,7 +54,7 @@ test.describe('Worm - Document List Page', () => {
   });
 
   test('should open document in editor when clicked', async ({ page }) => {
-    await page.goto('/worm/');
+    await page.goto('/write/');
     
     // Wait for documents to load
     await page.waitForLoadState('networkidle');
@@ -70,7 +70,7 @@ test.describe('Worm - Document List Page', () => {
   });
 
   test('should handle empty document list gracefully', async ({ page }) => {
-    await page.goto('/worm/');
+    await page.goto('/write/');
     await page.waitForLoadState('networkidle');
     
     // Page should not crash and should be interactive
@@ -82,13 +82,13 @@ test.describe('Worm - Document List Page', () => {
     const filename = 'Test Delete ' + Date.now() + '.md';
 
     // Create document via API
-    await page.request.put(`/api/worm/data/${encodeURIComponent(filename)}`, {
+    await page.request.put(`/api/write/data/${encodeURIComponent(filename)}`, {
       headers: { 'Content-Type': 'text/plain' },
       data: '# Test\n\nContent'
     });
 
     // Navigate to editor and save
-    await page.goto(`/worm/editor.html?file=${encodeURIComponent(filename)}`);
+    await page.goto(`/write/editor.html?file=${encodeURIComponent(filename)}`);
     await page.waitForLoadState('networkidle');
     
     const saveBtn = page.locator('#saveBtn');
@@ -96,7 +96,7 @@ test.describe('Worm - Document List Page', () => {
     await page.waitForTimeout(1000);
     
     // Go back to list
-    await page.goto('/worm/');
+    await page.goto('/write/');
     await page.waitForLoadState('networkidle');
     
     // Find and delete the document

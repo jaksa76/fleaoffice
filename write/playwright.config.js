@@ -22,7 +22,7 @@ export default defineConfig({
 
   webServer: {
     command: 'fleabox --dev --apps-dir dist',
-    url: 'http://localhost:3000/worm',
+    url: 'http://localhost:3000/write',
     reuseExistingServer: !process.env.CI,
     timeout: 30 * 1000,
   },

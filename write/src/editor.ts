@@ -8,12 +8,19 @@ import { listener, listenerCtx } from '@milkdown/plugin-listener';
 import { nord } from '@milkdown/theme-nord';
 
 // ============================================================================
-// Storage Interface (shared with app.js)
+// Storage Interface (shared with app.ts)
 // ============================================================================
 
+interface DirectoryEntry {
+    name: string;
+    type: 'file' | 'directory';
+    size: number;
+    mtime: number;
+}
+
 const storage = {
-    async fetchJSON(path) {
-        const response = await fetch(`/api/worm/data${path}`);
+    async fetchJSON(path: string): Promise<any> {
+        const response = await fetch(`/api/write/data${path}`);
         if (!response.ok) {
             if (response.status === 404) return null;
             throw new Error(`Failed to fetch ${path}`);
@@ -21,8 +28,8 @@ const storage = {
         return response.json();
     },
 
-    async saveJSON(path, data) {
-        const response = await fetch(`/api/worm/data${path}`, {
+    async saveJSON(path: string, data: any): Promise<boolean> {
+        const response = await fetch(`/api/write/data${path}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
@@ -32,14 +39,14 @@ const storage = {
         return true;
     },
 
-    async delete(path, recursive = false) {
+    async delete(path: string, recursive = false): Promise<void> {
         const url = recursive ? `${path}?recursive=true` : path;
-        const response = await fetch(`/api/worm/data${url}`, { method: 'DELETE' });
+        const response = await fetch(`/api/write/data${url}`, { method: 'DELETE' });
         if (!response.ok) throw new Error(`Failed to delete ${path}`);
     },
 
-    async saveFile(path, content, isText = false) {
-        const response = await fetch(`/api/worm/data${path}`, {
+    async saveFile(path: string, content: string | Blob, isText = false): Promise<void> {
+        const response = await fetch(`/api/write/data${path}`, {
             method: 'PUT',
             headers: { 'Content-Type': isText ? 'text/plain' : 'application/octet-stream' },
             body: content
@@ -47,16 +54,16 @@ const storage = {
         if (!response.ok) throw new Error(`Failed to save file ${path}`);
     },
 
-    async uploadFile(path, file) {
-        const response = await fetch(`/api/worm/data${path}`, {
+    async uploadFile(path: string, file: File): Promise<void> {
+        const response = await fetch(`/api/write/data${path}`, {
             method: 'PUT',
             body: file
         });
         if (!response.ok) throw new Error(`Failed to upload file ${path}`);
     },
 
-    async listDirectory(path) {
-        const response = await fetch(`/api/worm/data${path}`);
+    async listDirectory(path: string): Promise<DirectoryEntry[]> {
+        const response = await fetch(`/api/write/data${path}`);
         if (!response.ok) throw new Error(`Failed to list ${path}`);
         const entries = await response.json();
         // Returns: [{ name: "file.json", type: "file", size: 1234, mtime: 1234567890 }, ...]
@@ -69,7 +76,7 @@ const storage = {
 // ============================================================================
 
 // Convert title to valid filename
-function sanitizeFilename(title) {
+function sanitizeFilename(title: string): string {
     // Remove or replace invalid filename characters
     return title
         .replace(/[/\\?%*:|"<>]/g, '-')  // Replace invalid chars with dash
@@ -79,7 +86,7 @@ function sanitizeFilename(title) {
 }
 
 // Extract title from filename
-function filenameToTitle(filename) {
+function filenameToTitle(filename: string): string {
     return filename.replace(/\.md$/i, '');
 }
 
@@ -88,27 +95,34 @@ function filenameToTitle(filename) {
 // ============================================================================
 
 class EditorManager {
+    editor: Editor | null;
+    filename: string | null;
+    isDirty: boolean;
+    saveTimeout: NodeJS.Timeout | null;
+    currentMarkdown: string;
+
     constructor() {
         this.editor = null;
         this.filename = null;
         this.isDirty = false;
         this.saveTimeout = null;
+        this.currentMarkdown = '';
     }
 
-    async initialize() {
+    async initialize(): Promise<void> {
         // Get filename from URL (not ID anymore!)
         const params = new URLSearchParams(window.location.search);
         this.filename = params.get('file');
 
         if (!this.filename) {
             alert('No document specified');
-            window.location.href = '/worm/';
+            window.location.href = '/write/';
             return;
         }
 
         // Extract title from filename
         const title = filenameToTitle(this.filename);
-        document.getElementById('docTitle').value = title;
+        (document.getElementById('docTitle') as HTMLInputElement).value = title;
 
         // Load document content
         const initialContent = await this.loadDocumentContent();
@@ -120,7 +134,7 @@ class EditorManager {
         this.setupListeners();
     }
 
-    async initMilkdown(initialContent = '') {
+    async initMilkdown(initialContent = ''): Promise<void> {
         this.currentMarkdown = initialContent;
         
         const editor = await Editor.make()
@@ -131,9 +145,9 @@ class EditorManager {
             .config(nord)
             .use(commonmark)
             .use(listener)
-            .use((ctx) => {
-                const listener = ctx.get(listenerCtx);
-                listener.markdownUpdated((ctx, markdown, prevMarkdown) => {
+            .config((ctx) => {
+                const listenerPlugin = ctx.get(listenerCtx);
+                listenerPlugin.markdownUpdated((_ctx, markdown, _prevMarkdown) => {
                     this.currentMarkdown = markdown;
                     this.isDirty = true;
                     this.scheduleAutoSave();
@@ -142,12 +156,11 @@ class EditorManager {
             .create();
         
         this.editor = editor;
-        this.editorViewCtx = editorViewCtx;
     }
 
-    async loadDocumentContent() {
+    async loadDocumentContent(): Promise<string> {
         try {
-            const response = await fetch(`/api/worm/data/${encodeURIComponent(this.filename)}`);
+            const response = await fetch(`/api/write/data/${encodeURIComponent(this.filename!)}`);
             if (response.ok) {
                 return await response.text();
             }
@@ -157,14 +170,14 @@ class EditorManager {
         return '';
     }
 
-    async getEditorContent() {
+    async getEditorContent(): Promise<string> {
         return this.currentMarkdown || '';
     }
 
-    async saveDocument() {
+    async saveDocument(): Promise<void> {
         try {
             const markdown = await this.getEditorContent();
-            const newTitle = document.getElementById('docTitle').value || 'Untitled';
+            const newTitle = (document.getElementById('docTitle') as HTMLInputElement).value || 'Untitled';
             const newFilename = sanitizeFilename(newTitle) + '.md';
 
             // Check if title changed (rename needed)
@@ -180,7 +193,7 @@ class EditorManager {
 
                 // Rename: save to new filename, delete old
                 await storage.saveFile(`/${newFilename}`, markdown, true);
-                await storage.delete(`/${this.filename}`);
+                await storage.delete(`/${this.filename!}`);
 
                 // Update state and URL
                 this.filename = newFilename;
@@ -189,7 +202,7 @@ class EditorManager {
                 window.history.replaceState({}, '', newUrl);
             } else {
                 // Just save content
-                await storage.saveFile(`/${this.filename}`, markdown, true);
+                await storage.saveFile(`/${this.filename!}`, markdown, true);
             }
 
             this.isDirty = false;
@@ -200,8 +213,8 @@ class EditorManager {
         }
     }
 
-    scheduleAutoSave() {
-        clearTimeout(this.saveTimeout);
+    scheduleAutoSave(): void {
+        if (this.saveTimeout) clearTimeout(this.saveTimeout);
         this.saveTimeout = setTimeout(() => {
             if (this.isDirty) {
                 this.saveDocument();
@@ -209,11 +222,11 @@ class EditorManager {
         }, 2000);
     }
 
-    async handleImageUpload(files) {
-        const { schema } = this.editor.ctx.get(window.Milkdown.editorViewCtx)?.state || {};
+    async handleImageUpload(files: FileList): Promise<any[]> {
+        const { schema } = (this.editor!.ctx.get(editorViewCtx) as any)?.state || {};
         if (!schema) return [];
 
-        const nodes = [];
+        const nodes: any[] = [];
 
         for (let i = 0; i < files.length; i++) {
             const file = files[i];
@@ -234,22 +247,22 @@ class EditorManager {
         return nodes;
     }
 
-    async uploadImage(file) {
+    async uploadImage(file: File): Promise<string> {
         const filename = `${Date.now()}-${file.name}`;
         const path = `/${filename}`;  // Save to root with documents
 
         try {
             await storage.uploadFile(path, file);
             // Return path for markdown
-            return `/api/worm/data/${filename}`;
+            return `/api/write/data/${filename}`;
         } catch (error) {
             console.error('Image upload failed:', error);
             throw error;
         }
     }
 
-    showSaveStatus(message, isError = false) {
-        const statusEl = document.getElementById('saveStatus');
+    showSaveStatus(message: string, isError = false): void {
+        const statusEl = document.getElementById('saveStatus')!;
         statusEl.textContent = message;
         statusEl.className = `save-status ${isError ? 'error' : 'success'}`;
 
@@ -261,18 +274,18 @@ class EditorManager {
         }
     }
 
-    setupListeners() {
-        document.getElementById('saveBtn').addEventListener('click', () => {
+    setupListeners(): void {
+        document.getElementById('saveBtn')!.addEventListener('click', () => {
             this.saveDocument();
         });
 
-        document.getElementById('deleteBtn').addEventListener('click', () => {
+        document.getElementById('deleteBtn')!.addEventListener('click', () => {
             if (confirm('Delete this document?')) {
                 this.deleteDocument();
             }
         });
 
-        document.getElementById('docTitle').addEventListener('input', () => {
+        (document.getElementById('docTitle') as HTMLInputElement).addEventListener('input', () => {
             this.isDirty = true;
             this.scheduleAutoSave();
         });
@@ -286,13 +299,13 @@ class EditorManager {
         });
     }
 
-    async deleteDocument() {
+    async deleteDocument(): Promise<void> {
         try {
             // Delete the file from root
-            await storage.delete(`/${this.filename}`);
+            await storage.delete(`/${this.filename!}`);
 
             // Redirect to home
-            window.location.href = '/worm/';
+            window.location.href = '/write/';
         } catch (error) {
             console.error('Delete failed:', error);
             this.showSaveStatus('Delete failed', true);
