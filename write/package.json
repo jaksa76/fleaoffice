@@ -8,9 +8,6 @@
     "lint": "eslint .",
     "fleabox": "npm run build && fleabox --dev --apps-dir dist",
     "test": "npm run build && playwright test",
-    "test:ui": "npm run build && playwright test --ui",
-    "test:debug": "npm run build && playwright test --debug",
-    "test:headed": "npm run build && playwright test --headed",
     "clean": "rm -rf dist test-results playwright-report test-results.json"
   },
   "dependencies": {

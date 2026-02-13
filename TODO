@@ -1,9 +1,8 @@
-- initialize all applications
+- create dummy page for all apps
 - add playwright to each application
-- make write use React and vite
+- make write use React
 - make sure write has a good design
 - add unit tests to write
-- add E2E tests to write
 - set up CI/CD
 - set up dev environment
 - write overview of write application
