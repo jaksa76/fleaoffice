@@ -1,0 +1,29 @@
+{
+  "name": "fleaoffice",
+  "version": "1.0.0",
+  "description": "Modern web-based office suite for Fleabox",
+  "private": true,
+  "scripts": {
+    "build": "npm run build:write && npm run build:agenda && npm run build:list && npm run build:show && npm run copy",
+    "build:write": "cd write && npm run build",
+    "build:agenda": "cd agenda && npm run build",
+    "build:list": "cd list && npm run build",
+    "build:show": "cd show && npm run build",
+    "copy": "mkdir -p dist && cp -R write/dist/write dist/ && cp -R agenda/dist/agenda dist/ && cp -R list/dist/list dist/ && cp -R show/dist/show dist/",
+    "clean": "npm run clean:write && npm run clean:agenda && npm run clean:list && npm run clean:show && rm -rf dist",
+    "clean:write": "cd write && npm run clean",
+    "clean:agenda": "cd agenda && npm run clean 2>/dev/null || rm -rf agenda/dist",
+    "clean:list": "cd list && npm run clean 2>/dev/null || rm -rf list/dist",
+    "clean:show": "cd show && npm run clean 2>/dev/null || rm -rf show/dist",
+    "fleabox": "npm run build && fleabox --dev --apps-dir dist",
+    "test": "cd write && npm test",
+    "lint": "npm run lint:write && npm run lint:agenda && npm run lint:list && npm run lint:show",
+    "lint:write": "cd write && npm run lint",
+    "lint:agenda": "cd agenda && npm run lint",
+    "lint:list": "cd list && npm run lint",
+    "lint:show": "cd show && npm run lint"
+  },
+  "keywords": ["fleabox", "office", "productivity"],
+  "author": "",
+  "license": "MIT"
+}

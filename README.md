@@ -10,3 +10,49 @@ To grow into a fully reimagined office suite liberating users from legacy concep
 **agenda** - meetings and tasks living together
 **show** - a modern way to create presentations
 
+## Development
+
+### Quick Start
+
+```bash
+# Build all apps and start Fleabox
+npm run fleabox
+```
+
+### Building
+
+```bash
+# Build all apps
+npm run build
+
+# Build individual app
+cd write && npm run build
+```
+
+### Testing
+
+```bash
+# Run tests (currently only write has tests)
+npm test
+```
+
+### Cleaning
+
+```bash
+# Clean all build artifacts
+npm run clean
+```
+
+### Development Workflow
+
+Each app can still be developed independently:
+```bash
+cd write
+npm run fleabox  # Build and run just this app
+```
+
+Or run all apps together from the root:
+```bash
+npm run fleabox  # Builds all apps
+```
+
