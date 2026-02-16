@@ -22,9 +22,16 @@ cd write
   - Uses Vite to bundle the app
   - Output goes to `dist/write/` (Fleabox app structure)
 
-- **Run development server**: `npm run fleabox`
+- **Development server (with hot-reload)**: `npm run dev`
+  - Starts Vite dev server with hot module replacement
+  - App available at `http://localhost:5173/write/`
+  - **Note**: Requires fleabox running separately for API access
+  - Proxies `/api` requests to fleabox on port 3000
+
+- **Production mode**: `npm run fleabox`
   - Builds and starts Fleabox in development mode (no auth required)
   - App available at `http://localhost:3000/write/`
+  - No hot-reload, but includes API server
 
 ### Testing
 
@@ -81,6 +88,7 @@ App (main.tsx)
    - Loads and displays all markdown documents
    - Handles document creation (with duplicate validation)
    - Handles document deletion (optimistic UI with error rollback)
+   - Gracefully handles 404 responses (treats as empty directory)
 
 2. **DocumentCard.tsx**
    - Displays individual document metadata
@@ -94,6 +102,7 @@ App (main.tsx)
    - Implements save logic (content-only or rename)
    - Uses `useAutoSave` hook for debounced auto-save (2 second delay)
    - Handles delete with confirmation and navigation
+   - Gracefully handles 404 responses during duplicate checks
 
 4. **MilkdownEditor.tsx**
    - Wraps Milkdown editor using `@milkdown/react`
@@ -158,6 +167,8 @@ All requests are prefixed with `/api/write/data`:
 - Single-page React app configuration
 - Uses `@vitejs/plugin-react` for React support
 - Output directory: `dist/write/`
+- Dev server on port 5173 with API proxy to port 3000
+- Proxies `/api` requests to fleabox for development
 
 **Playwright Configuration** (`playwright.config.js`):
 - Runs tests sequentially (workers: 1)
@@ -190,3 +201,7 @@ Tests use Playwright's request API to create/delete test documents directly via 
 7. **Optimistic UI updates**: Document deletion updates UI immediately before API call completes, with error handling that reloads on failure.
 
 8. **Milkdown React integration**: Uses official `@milkdown/react` package with `useEditor` hook for editor lifecycle management.
+
+9. **404 handling**: Components gracefully handle 404 responses from the API (empty directories) by treating them as empty arrays rather than errors.
+
+10. **Development workflow**: Use `npm run dev` for hot-reload development (requires fleabox running separately), or `npm run fleabox` for production-like testing.

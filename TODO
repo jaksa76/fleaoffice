@@ -1,6 +1,5 @@
 - update CLAUDE.md
 - make sure write has a good design
-- update write/README.md
 - add unit tests to write (?)
 - set up CI/CD
 - write overview of write application
