@@ -1,1 +1,1 @@
-{"root":["./src/app.ts","./src/editor.ts"],"version":"5.9.3"}
+{"root":["./src/App.tsx","./src/DirectoryEntry.ts","./src/Document.ts","./src/DocumentCard.tsx","./src/DocumentList.tsx","./src/Editor.tsx","./src/MilkdownEditor.tsx","./src/SaveStatus.tsx","./src/autoSave.ts","./src/filename.ts","./src/main.tsx","./src/storage.ts","./src/types.d.ts"],"version":"5.9.3"}

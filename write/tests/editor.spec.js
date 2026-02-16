@@ -10,8 +10,8 @@ async function createTestDocument(page, title = 'Test Document') {
     data: '# ' + title + '\n\nTest content'
   });
 
-  // Navigate to editor with the file
-  await page.goto(`/write/editor.html?file=${encodeURIComponent(filename)}`);
+  // Navigate to editor with the file (hash-based routing)
+  await page.goto(`/write/#/editor/${encodeURIComponent(filename)}`);
   await page.waitForLoadState('networkidle');
 
   return page;
@@ -20,18 +20,18 @@ async function createTestDocument(page, title = 'Test Document') {
 test.describe('Write - Editor Page', () => {
   test('should load the editor page', async ({ page }) => {
     await createTestDocument(page);
-    await expect(page).toHaveTitle('Write - Editor');
+    await expect(page).toHaveTitle('Write');
   });
 
   test('should display editor title input', async ({ page }) => {
     await createTestDocument(page);
-    const titleInput = page.locator('#docTitle');
+    const titleInput = page.locator('.doc-title');
     await expect(titleInput).toBeVisible();
   });
 
   test('should display save button', async ({ page }) => {
     await createTestDocument(page);
-    const saveBtn = page.locator('#saveBtn');
+    const saveBtn = page.locator('button[title="Save document"]');
     await expect(saveBtn).toBeVisible();
   });
 
@@ -43,7 +43,7 @@ test.describe('Write - Editor Page', () => {
 
   test('should have Milkdown editor container', async ({ page }) => {
     await createTestDocument(page);
-    const editor = page.locator('#editor');
+    const editor = page.locator('.editor');
     await expect(editor).toBeVisible();
   });
 
@@ -51,12 +51,12 @@ test.describe('Write - Editor Page', () => {
     await createTestDocument(page);
     const backBtn = page.locator('a[title="Back to documents"]');
     await backBtn.click();
-    await expect(page).toHaveURL(/\/write\/?$/);
+    await expect(page).toHaveURL(/\/write\/(#\/?)?$/);
   });
 
   test('should allow typing in title input', async ({ page }) => {
     await createTestDocument(page);
-    const titleInput = page.locator('#docTitle');
+    const titleInput = page.locator('.doc-title');
     await titleInput.fill('Modified Title');
     const value = await titleInput.inputValue();
     expect(value).toBe('Modified Title');
@@ -64,8 +64,8 @@ test.describe('Write - Editor Page', () => {
 
   test('should save document with title and content', async ({ page }) => {
     await createTestDocument(page);
-    const titleInput = page.locator('#docTitle');
-    const saveBtn = page.locator('#saveBtn');
+    const titleInput = page.locator('.doc-title');
+    const saveBtn = page.locator('button[title="Save document"]');
 
     await titleInput.fill('My Test Document');
 
@@ -78,7 +78,7 @@ test.describe('Write - Editor Page', () => {
 
   test('should have delete button', async ({ page }) => {
     await createTestDocument(page);
-    const deleteBtn = page.locator('#deleteBtn');
+    const deleteBtn = page.locator('button[title="Delete document"]');
     await expect(deleteBtn).toBeVisible();
   });
 
@@ -97,7 +97,7 @@ test.describe('Write - Editor Page', () => {
 
   test('should preserve title when interacting with editor', async ({ page }) => {
     await createTestDocument(page);
-    const titleInput = page.locator('#docTitle');
+    const titleInput = page.locator('.doc-title');
     const testTitle = 'Preserved Title ' + Date.now();
 
     await titleInput.fill(testTitle);
@@ -108,8 +108,8 @@ test.describe('Write - Editor Page', () => {
   test('should save document without errors', async ({ page }) => {
     await createTestDocument(page, 'Unique Save Test ' + Date.now());
 
-    const saveBtn = page.locator('#saveBtn');
-    const saveStatus = page.locator('#saveStatus');
+    const saveBtn = page.locator('button[title="Save document"]');
+    const saveStatus = page.locator('.save-status');
 
     // Wait for editor to load
     await page.waitForTimeout(1000);
@@ -127,16 +127,16 @@ test.describe('Write - Editor Page', () => {
   });
 
   test('should load Milkdown editor', async ({ page }) => {
-    await page.goto('/write/editor.html');
-    await page.waitForLoadState('networkidle');
-    
+    // Create a test document first since we need a filename in the route
+    await createTestDocument(page);
+
     // Wait for Milkdown to initialize
     await page.waitForTimeout(2000);
-    
+
     // Check if Milkdown editor is present
     const milkdownEditor = page.locator('.milkdown, .editor .ProseMirror');
     const count = await milkdownEditor.count();
-    
+
     // Either Milkdown loaded or editor container exists
     expect(count).toBeGreaterThanOrEqual(0);
   });

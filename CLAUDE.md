@@ -43,26 +43,76 @@ cd write
 
 ## Architecture
 
-### Two-Page Application
+### React Single-Page Application
 
-1. **Document List (`src/index.html` + `src/app.js`)**
-   - Shows all markdown documents
-   - Create new documents
-   - Delete existing documents
-   - Each document card links to the editor
+The app is built with React and uses hash-based routing for compatibility with Fleabox's static file serving.
 
-2. **Editor (`src/editor.html` + `src/editor.js`)**
-   - Milkdown-based WYSIWYG markdown editor
-   - Auto-save (2 second debounce)
-   - Title editing (renames file)
-   - Image upload support
-   - Ctrl+S/Cmd+S manual save
+**Component Structure:**
+```
+App (main.tsx)
+├── MilkdownProvider (@milkdown/react)
+└── HashRouter (react-router-dom)
+    ├── Route "/" → DocumentList
+    │   ├── Header with "Write" title
+    │   ├── New document button
+    │   └── Document grid
+    │       └── DocumentCard (for each document)
+    │           ├── Title and metadata
+    │           └── Delete button (optimistic UI)
+    │
+    └── Route "/editor/:filename" → Editor
+        ├── EditorToolbar
+        │   ├── Back button (Link to "/")
+        │   ├── Title input (triggers rename)
+        │   ├── Save button
+        │   └── Delete button
+        ├── MilkdownEditor component
+        └── SaveStatus (floating status messages)
+```
+
+**Routing:**
+- Document list: `/write/` or `/write/#/`
+- Editor: `/write/#/editor/filename.md`
+- Uses `HashRouter` for compatibility with static file servers (no server-side routing needed)
+
+**Key Components:**
+
+1. **DocumentList.tsx**
+   - Loads and displays all markdown documents
+   - Handles document creation (with duplicate validation)
+   - Handles document deletion (optimistic UI with error rollback)
+
+2. **DocumentCard.tsx**
+   - Displays individual document metadata
+   - Links to editor route
+   - Delete button with confirmation
+
+3. **Editor.tsx**
+   - Extracts filename from route params
+   - Loads document content on mount
+   - Handles title changes (triggers file rename)
+   - Implements save logic (content-only or rename)
+   - Uses `useAutoSave` hook for debounced auto-save (2 second delay)
+   - Handles delete with confirmation and navigation
+
+4. **MilkdownEditor.tsx**
+   - Wraps Milkdown editor using `@milkdown/react`
+   - Uses `useEditor` hook for editor lifecycle
+   - Configured with nord theme and commonmark preset
+   - Exposes `onContentChange` callback for content updates
+
+5. **SaveStatus.tsx**
+   - Floating status message component
+   - Auto-hides after 2 seconds on success
+   - Persistent on error
 
 ### Storage Architecture
 
 Documents are stored as `.md` files directly in the root of the user's data directory (`~/.local/share/fleabox/write/data/` in production).
 
-**Storage Interface**: Both `app.js` and `editor.js` include a `storage` object that abstracts the Fleabox API:
+**Centralized Storage Hook** (`src/storage.ts`):
+
+The `useStorage()` hook provides a memoized storage interface:
 
 - `storage.fetchJSON(path)` - GET request for JSON
 - `storage.saveJSON(path, data)` - PUT request for JSON
@@ -71,20 +121,14 @@ Documents are stored as `.md` files directly in the root of the user's data dire
 - `storage.delete(path, recursive)` - DELETE request
 - `storage.listDirectory(path)` - GET request returning `[{name, type, size, mtime}, ...]`
 
-**Important**: The storage abstraction is duplicated in both files. Changes to the API interface must be made in both `app.js` and `editor.js`.
+**Shared Utilities** (`src/filename.ts`):
+- `sanitizeFilename(title)` - Converts title to valid filename
+- `filenameToTitle(filename)` - Strips .md extension
 
-### Document Management
-
-**DocumentManager** (in `app.js`):
-- `loadDocuments()` - Lists all `.md` files from root directory
-- `checkDuplicateTitle(title)` - Validates unique titles before creation
-- `deleteDocument(filename)` - Removes document file
-
-**EditorManager** (in `editor.js`):
-- `initialize()` - Sets up Milkdown editor with document content
-- `saveDocument()` - Saves content and handles title changes (renames)
-- `uploadImage(file)` - Uploads images to root directory
-- `deleteDocument()` - Deletes current document and redirects to list
+**Auto-Save Hook** (`src/autoSave.ts`):
+- `useAutoSave(content, isDirty, onSave, delay)` - Debounced save functionality
+- Default 2-second delay
+- Automatically cleans up on unmount
 
 ### File Naming
 
@@ -109,10 +153,11 @@ All requests are prefixed with `/api/write/data`:
 
 ## Build System
 
-**Vite Configuration** (`vite.config.js`):
+**Vite Configuration** (`vite.config.ts`):
 - Base path: `/write/`
-- Multi-page setup: `index.html` and `editor.html`
-- Custom plugin moves HTML files from `dist/write/src/` to `dist/write/` and fixes asset paths
+- Single-page React app configuration
+- Uses `@vitejs/plugin-react` for React support
+- Output directory: `dist/write/`
 
 **Playwright Configuration** (`playwright.config.js`):
 - Runs tests sequentially (workers: 1)
@@ -130,14 +175,18 @@ Tests use Playwright's request API to create/delete test documents directly via 
 
 ## Important Implementation Notes
 
-1. **Duplicate storage code**: The `storage` object is duplicated in both `app.js` and `editor.js`. Keep them in sync when making changes.
+1. **Hash-based routing**: Uses `HashRouter` instead of `BrowserRouter` for compatibility with static file servers. URLs use `#/` prefix (e.g., `/write/#/editor/Doc.md`).
 
-2. **Auto-save**: Editor auto-saves after 2 seconds of inactivity. Manual save available via button or Ctrl+S.
+2. **Centralized storage**: The `useStorage()` hook provides a single storage abstraction. No code duplication across components.
 
-3. **Title changes = Renames**: Changing a document's title in the editor saves to a new filename and deletes the old file.
+3. **Auto-save**: Editor auto-saves after 2 seconds of inactivity. Manual save available via button or Ctrl+S.
 
-4. **Images in root**: Uploaded images are stored in the root data directory alongside markdown files, not in a separate folder.
+4. **Title changes = Renames**: Changing a document's title in the editor saves to a new filename and deletes the old file.
 
-5. **No nested directories**: All documents and images are stored flat in the root directory.
+5. **Images in root**: Uploaded images are stored in the root data directory alongside markdown files, not in a separate folder.
 
-6. **Optimistic UI updates**: Document deletion updates UI immediately before API call completes, with error handling that reloads on failure.
+6. **No nested directories**: All documents and images are stored flat in the root directory.
+
+7. **Optimistic UI updates**: Document deletion updates UI immediately before API call completes, with error handling that reloads on failure.
+
+8. **Milkdown React integration**: Uses official `@milkdown/react` package with `useEditor` hook for editor lifecycle management.

@@ -10,8 +10,8 @@ async function createTestDocument(page, title = 'Test Document') {
     data: '# ' + title + '\n\nTest content'
   });
 
-  // Navigate to editor with the file
-  await page.goto(`/write/editor.html?file=${encodeURIComponent(filename)}`);
+  // Navigate to editor with the file (hash-based routing)
+  await page.goto(`/write/#/editor/${encodeURIComponent(filename)}`);
   await page.waitForLoadState('networkidle');
 
   return page;
@@ -22,7 +22,7 @@ test.describe('Write - API Integration', () => {
     await createTestDocument(page);
 
     // App should load without errors
-    await expect(page).toHaveTitle('Write - Editor');
+    await expect(page).toHaveTitle('Write');
   });
 
   test('should load document index from API', async ({ page }) => {
@@ -31,7 +31,7 @@ test.describe('Write - API Integration', () => {
     // Wait for documents to load from API
     await page.waitForLoadState('networkidle');
     
-    const docList = page.locator('#documentList');
+    const docList = page.locator('.document-list');
     await expect(docList).toBeVisible();
   });
 
@@ -39,18 +39,18 @@ test.describe('Write - API Integration', () => {
     // Navigate to editor - app should not crash even if API is slow
     await createTestDocument(page);
 
-    const titleInput = page.locator('#docTitle');
+    const titleInput = page.locator('.doc-title');
     await expect(titleInput).toBeVisible();
 
     // App should be responsive
-    const saveBtn = page.locator('#saveBtn');
+    const saveBtn = page.locator('button[title="Save document"]');
     await expect(saveBtn).toBeEnabled();
   });
 
   test('should list documents from API response', async ({ page }) => {
     // Create a document first
     await createTestDocument(page, 'List Test ' + Date.now());
-    const saveBtn = page.locator('#saveBtn');
+    const saveBtn = page.locator('button[title="Save document"]');
 
     await saveBtn.click();
 
@@ -64,13 +64,13 @@ test.describe('Write - API Integration', () => {
     await page.waitForLoadState('networkidle');
 
     // Should not crash and should show empty state or loading state
-    const docList = page.locator('#documentList');
+    const docList = page.locator('.document-list');
     await expect(docList).toBeVisible();
   });
 
   test('should delete document from API', async ({ page }) => {
     await createTestDocument(page);
-    const deleteBtn = page.locator('#deleteBtn');
+    const deleteBtn = page.locator('button[title="Delete document"]');
 
     // Only test if delete button exists and is enabled
     const isVisible = await deleteBtn.isVisible();

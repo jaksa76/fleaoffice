@@ -4,6 +4,7 @@
   "description": "A simple markdown document editor for Fleabox",
   "main": "app.js",
   "scripts": {
+    "dev": "vite --host",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "fleabox": "npm run build && fleabox --dev --apps-dir dist",
@@ -11,6 +12,10 @@
     "clean": "rm -rf dist test-results playwright-report test-results.json"
   },
   "dependencies": {
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-router-dom": "^7.1.3",
+    "@milkdown/react": "^7.18.0",
     "@milkdown/core": "^7.18.0",
     "@milkdown/plugin-history": "^7.0.0",
     "@milkdown/plugin-listener": "^7.18.0",
@@ -23,6 +28,9 @@
     "@eslint/js": "^9.39.2",
     "@playwright/test": "^1.58.1",
     "@types/node": "^25.2.3",
+    "@types/react": "^19.2.7",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.1.1",
     "eslint": "^9.39.2",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.26",

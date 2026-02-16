@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Write - Document List Page', () => {
   test('should load the main page', async ({ page }) => {
     await page.goto('/write/');
-    await expect(page).toHaveTitle('Write - Documents');
+    await expect(page).toHaveTitle('Write');
   });
 
   test('should display the Write header', async ({ page }) => {
@@ -14,13 +14,13 @@ test.describe('Write - Document List Page', () => {
 
   test('should display new document button', async ({ page }) => {
     await page.goto('/write/');
-    const newDocBtn = page.locator('#newDocBtn');
+    const newDocBtn = page.locator('button[title="New document"]');
     await expect(newDocBtn).toBeVisible();
   });
 
   test('should have document list container', async ({ page }) => {
     await page.goto('/write/');
-    const docList = page.locator('#documentList');
+    const docList = page.locator('.document-list');
     await expect(docList).toBeVisible();
   });
 
@@ -37,7 +37,7 @@ test.describe('Write - Document List Page', () => {
     await page.goto('/write/');
     await page.waitForLoadState('networkidle');
 
-    const newDocBtn = page.locator('#newDocBtn');
+    const newDocBtn = page.locator('button[title="New document"]');
 
     // Wait for dialog and handle it
     const [dialog] = await Promise.all([
@@ -47,34 +47,34 @@ test.describe('Write - Document List Page', () => {
     await dialog.accept('New Test Document ' + Date.now());
 
     // Wait for navigation
-    await page.waitForURL(/.*file=.*/, { timeout: 10000 });
+    await page.waitForURL(/.*#\/editor\/.*/, { timeout: 10000 });
 
-    // Should navigate to editor page with file parameter
-    await expect(page).toHaveURL(/editor\.html.*file=/);
+    // Should navigate to editor page
+    await expect(page).toHaveURL(/#\/editor\//);
   });
 
   test('should open document in editor when clicked', async ({ page }) => {
     await page.goto('/write/');
-    
+
     // Wait for documents to load
     await page.waitForLoadState('networkidle');
-    
+
     // Try to click on a document if one exists
-    const documentItems = page.locator('.document-item');
-    const count = await documentItems.count();
-    
+    const documentLinks = page.locator('.document-link');
+    const count = await documentLinks.count();
+
     if (count > 0) {
-      await documentItems.first().click();
-      await expect(page).toHaveURL(/editor\.html/);
+      await documentLinks.first().click();
+      await expect(page).toHaveURL(/#\/editor\//);
     }
   });
 
   test('should handle empty document list gracefully', async ({ page }) => {
     await page.goto('/write/');
     await page.waitForLoadState('networkidle');
-    
+
     // Page should not crash and should be interactive
-    const newDocBtn = page.locator('#newDocBtn');
+    const newDocBtn = page.locator('button[title="New document"]');
     await expect(newDocBtn).toBeEnabled();
   });
 
@@ -87,11 +87,11 @@ test.describe('Write - Document List Page', () => {
       data: '# Test\n\nContent'
     });
 
-    // Navigate to editor and save
-    await page.goto(`/write/editor.html?file=${encodeURIComponent(filename)}`);
+    // Navigate to editor and save (hash-based routing)
+    await page.goto(`/write/#/editor/${encodeURIComponent(filename)}`);
     await page.waitForLoadState('networkidle');
-    
-    const saveBtn = page.locator('#saveBtn');
+
+    const saveBtn = page.locator('button[title="Save document"]');
     await saveBtn.click();
     await page.waitForTimeout(1000);
     
@@ -122,7 +122,7 @@ test.describe('Write - Document List Page', () => {
       await page.waitForTimeout(1000);
       
       // Should not see error messages in document list
-      const docList = page.locator('#documentList');
+      const docList = page.locator('.document-list');
       const listText = await docList.textContent();
       expect(listText).not.toContain('Failed to delete');
     }

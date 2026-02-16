@@ -1,9 +1,8 @@
-- add playwright to each application
-- make write use React
+- update CLAUDE.md
 - make sure write has a good design
-- add unit tests to write
+- update write/README.md
+- add unit tests to write (?)
 - set up CI/CD
-- set up dev environment
 - write overview of write application
 - write overview of agenda application
 - write overview of list application
