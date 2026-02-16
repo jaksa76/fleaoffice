@@ -17,7 +17,7 @@
 	// "forwardPorts": [],
 
 	// Use 'postCreateCommand' to run commands after the container is created.
-	"postCreateCommand": "curl -fsSL https://github.com/jaksa76/fleabox/releases/download/v2.0.2/fleabox -o fleabox && chmod +x fleabox && sudo mv fleabox /usr/local/bin/fleabox"
+	"postCreateCommand": "curl -fsSL https://github.com/jaksa76/fleabox/releases/download/v2.0.3/fleabox -o fleabox && chmod +x fleabox && sudo mv fleabox /usr/local/bin/fleabox"
 
 	// Configure tool-specific properties.
 	// "customizations": {},
