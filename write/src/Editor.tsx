@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useStorage } from './storage';
 import { useAutoSave } from './autoSave';
@@ -20,6 +20,7 @@ export function Editor() {
     isError: false
   });
   const [loading, setLoading] = useState(true);
+  const isSaving = useRef(false);
 
   const loadDocument = useCallback(async () => {
     if (!filename) return;
@@ -66,8 +67,9 @@ export function Editor() {
   };
 
   const saveDocument = useCallback(async () => {
-    if (!filename) return;
+    if (!filename || isSaving.current) return;
 
+    isSaving.current = true;
     try {
       const newTitle = title || 'Untitled';
       const newFilename = sanitizeFilename(newTitle) + '.md';
@@ -99,6 +101,8 @@ export function Editor() {
     } catch (err) {
       console.error('Save failed:', err);
       setSaveStatus({ message: 'Save failed', isError: true });
+    } finally {
+      isSaving.current = false;
     }
   }, [filename, title, content, storage, navigate]);
 

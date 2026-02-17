@@ -1,0 +1,69 @@
+- as a user I want to see the list of my lists so that I can manage them
+- as a user I want to create a new list so that I can organize my data
+- as a user I want to rename a list so that I can keep my collections understandable over time
+- as a user I want to delete a list so that I can remove collections I no longer need
+- as a user I want to open a list to view its items so that I can access my data
+- as a user I want a mobile list view so that I can browse items comfortably on a phone
+- as a user I want a desktop grid view so that I can see more items at once on larger screens
+- as a user I want to return to the home screen from a list so that I can switch collections
+- as a user I want to open an item so that I can see all its fields and details
+- as a user I want to define a primary name field so that each item has a clear title
+- as a user I want to edit a field’s name and configuration so that I can refine my schema
+- as a user I want to reorder fields so that the most important information appears first
+- as a user I want to hide fields in a view so that I can focus on what matters for that view
+- as a user I want to delete a field with confirmation so that I don’t accidentally remove data
+- as a user I want to add a new field to a list so that I can capture more information about my items
+- as a user I want to add a new item to a list so that I can populate my collection with data
+- as a user I want to edit an item in a list so that I can update its information
+- as a user I want to delete an item from a list so that I can remove outdated items
+- as a user I want inline editing on an item so that I can update values quickly
+- as a user I want to enter text fields as single-line or multi-line so that notes fit the content
+- as a user I want to be able to add a numeric field so that I can track quantities and measurements
+- as a user I want to enter numbers as integers or decimals so that quantities and measurements work
+- as a user I want to be able to add a currency field so that I can track financial data
+- as a user I want currency fields to show a currency symbol so that financial data is clear
+- as a user I want to be able to add a date field so that I can track schedules and due dates
+- as a user I want to set date fields using a date-only value so that schedules and due dates are unambiguous
+- as a user I want to be able to add a checkbox field so that I can track boolean states (e.g. done/not done)
+- as a user I want checkbox fields so that I can track boolean states (e.g. done/not done)
+- as a user I want to be able to add an image field so that I can include photos in my items
+- as a user I want to upload images for picture fields so that my items can include photos
+- as a user I want to be able to add a gallery field so that I can include multiple photos in my items
+- as a user I want to delete an image from a gallery field so that I can manage the photos in my items
+- as a user I want to be able to add a URL field so that I can link to related resources
+- as a user I want URL fields to be clickable so that I can open related links quickly
+- as a user I want to be able to add a select field so that I can choose one option from a predefined list
+- as a user I want select fields so that I can choose one option from a predefined list
+- as a user I want to be able to add a multi-select field so that I can choose multiple options from a predefined list
+- as a user I want multi-select fields so that I can choose multiple options from a predefined list
+- as a user I want to add formula fields that compute values based on other fields so that I can automate calculations and logic
+- as a user I want formula fields to be read-only so that computed values can’t be overwritten
+- as a user I want to reference other fields by name in formulas so that expressions are understandable
+- as a user I want to see errors for invalid formulas so that I can fix them
+- as a user I want circular formula references to be detected so that calculations don’t loop
+- as a user I want to filter items by any field so that I can narrow down results
+- as a user I want to sort by any field ascending/descending so that I can organize my view
+- as a user I want filters and sorts to be saved with a view so that I don’t have to reapply them
+- as a user I want to choose which fields are visible in a view so that each view matches my workflow
+- as a user I want to be able to see the total of a field
+- as a user I want to be able to see the average of a field
+- as a user I want to be able to see the minimum of a field
+- as a user I want to be able to see the maximum of a field
+- as a user I want to be able to see the count of items in a field
+- as a user I want to be able to see the count of checked items in a checkbox field
+- as a user I want a count-checked aggregate for checkbox fields so that I can summarize completed items
+- as a user I want to add charts to a collection so that I can visualize my data
+- as a user I want to name charts so that I can manage multiple charts per collection
+- as a user I want bar/line/pie/scatter charts so that I can pick the right visualization
+- as a user I want to view my items in a bar chart so that I can compare values across categories
+- as a user I want to be able to select the field used for the Y-axis in the bar chart
+- as a user I want to view my items in a line chart so that I can see trends over time
+- as a user I want to be able to select the field used for the Y-axis in the line chart
+- as a user I want to be able to select the field used for the X-axis in the line chart
+- as a user I want to view my items in a pie chart so that I can see proportions of categories
+- as a user I want to be able to select the field used for grouping in the pie chart
+- as a user I want to be able to select the field used for the value in the pie chart
+- as a user I want to view my items in a scatter chart so that I can see correlations between two numeric fields
+- as a user I want to be able to select the field used for the X-axis in the scatter chart
+- as a user I want to be able to select the field used for the Y-axis in the scatter chart
+- as a user I want to be able to preview the trend line in the scatter chart so that I can see overall correlations
