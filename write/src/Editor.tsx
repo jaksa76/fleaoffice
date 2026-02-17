@@ -21,18 +21,7 @@ export function Editor() {
   });
   const [loading, setLoading] = useState(true);
 
-  // Load document on mount
-  useEffect(() => {
-    if (!filename) {
-      alert('No document specified');
-      navigate('/');
-      return;
-    }
-
-    loadDocument();
-  }, [filename]);
-
-  async function loadDocument() {
+  const loadDocument = useCallback(async () => {
     if (!filename) return;
 
     try {
@@ -53,7 +42,18 @@ export function Editor() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [filename, storage]);
+
+  // Load document on mount
+  useEffect(() => {
+    if (!filename) {
+      alert('No document specified');
+      navigate('/');
+      return;
+    }
+
+    loadDocument();
+  }, [filename, navigate, loadDocument]);
 
   const handleContentChange = useCallback((markdown: string) => {
     setContent(markdown);
