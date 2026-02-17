@@ -17,6 +17,11 @@ The suite consists of four apps, each in its own directory:
 
 Each app is an independent React + Vite project that builds to `dist/<appname>/` and is served by Fleabox at `/<appname>/`.
 
+## Documentation
+
+- **Architecture**: See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for design philosophy, technology stack, and architectural decisions.
+- **UI Guidelines**: See [`docs/UI-GUIDELINES.md`](docs/UI-GUIDELINES.md) for design rules, color palette, typography, and component standards.
+
 ## Development Commands
 
 ### Root-Level Commands
