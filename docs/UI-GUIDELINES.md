@@ -21,7 +21,7 @@ Inspired by [GNOME Human Interface Guidelines](https://developer.gnome.org/hig/p
 - Test on real mobile devices regularly
 
 ### 3. Elegance and Premium Feel
-- Use subtle animations and transitions (200ms duration is ideal)
+- Use subtle animations and transitions (150-250ms, with 200ms as the sweet spot)
 - Soft shadows for depth, not heavy borders
 - Rounded corners (6-12px) for modern feel
 - High contrast text for readability, but avoid harsh blacks
@@ -109,7 +109,7 @@ Info:     #1976d2  (blue)
 
 ### Usage Guidelines
 - Use color sparingly to draw attention
-- Maintain 4.5:1 contrast ratio for text (WCAG AA)
+- Maintain proper contrast ratios (see Accessibility section for requirements)
 - Don't rely solely on color to convey meaning
 - Keep backgrounds neutral to let content shine
 
