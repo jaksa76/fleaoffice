@@ -10,6 +10,10 @@ To grow into a fully reimagined office suite liberating users from legacy concep
 **agenda** - meetings and tasks living together
 **show** - a modern way to create presentations
 
+## Design
+
+See [UI Guidelines](docs/UI-GUIDELINES.md) for design principles and patterns used across all Fleaoffice apps.
+
 ## Development
 
 ### Quick Start
