@@ -122,7 +122,7 @@ export function DocumentList() {
     return (
       <div className="container">
         <div className="header">
-          <h1>Write</h1>
+          <h1>write</h1>
         </div>
         <div className="document-list">
           <div className="loading">Loading documents...</div>
@@ -135,7 +135,7 @@ export function DocumentList() {
     return (
       <div className="container">
         <div className="header">
-          <h1>Write</h1>
+          <h1>write</h1>
         </div>
         <div className="document-list">
           <div className="error">{error}</div>
@@ -147,7 +147,7 @@ export function DocumentList() {
   return (
     <div className="container">
       <div className="header">
-        <h1>Write</h1>
+        <h1>write</h1>
         <button className="btn-icon" onClick={createNewDocument} title="New document">
           <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M12 5v14M5 12h14"/>
