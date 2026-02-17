@@ -43,7 +43,7 @@ test.describe('Write - Editor Page', () => {
 
   test('should have Milkdown editor container', async ({ page }) => {
     await createTestDocument(page);
-    const editor = page.locator('.editor');
+    const editor = page.locator('.editor-container > .editor');
     await expect(editor).toBeVisible();
   });
 
@@ -133,11 +133,11 @@ test.describe('Write - Editor Page', () => {
     // Wait for Milkdown to initialize
     await page.waitForTimeout(2000);
 
-    // Check if Milkdown editor is present
-    const milkdownEditor = page.locator('.milkdown, .editor .ProseMirror');
-    const count = await milkdownEditor.count();
+    // Milkdown must render both its container and a ProseMirror editable region
+    const milkdownContainer = page.locator('.milkdown');
+    await expect(milkdownContainer).toBeVisible();
 
-    // Either Milkdown loaded or editor container exists
-    expect(count).toBeGreaterThanOrEqual(0);
+    const proseMirror = page.locator('.editor .ProseMirror');
+    await expect(proseMirror).toBeVisible();
   });
 });

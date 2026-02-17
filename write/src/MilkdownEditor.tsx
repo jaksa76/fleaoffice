@@ -1,4 +1,4 @@
-import { useEditor } from '@milkdown/react';
+import { Milkdown, useEditor } from '@milkdown/react';
 import { Editor, rootCtx, defaultValueCtx } from '@milkdown/core';
 import { commonmark } from '@milkdown/preset-commonmark';
 import { listener, listenerCtx } from '@milkdown/plugin-listener';
@@ -27,9 +27,10 @@ export function MilkdownEditor({ initialContent, onContentChange }: MilkdownEdit
       });
   }, [initialContent]);
 
-  if (loading) {
-    return <div className="editor">Loading editor...</div>;
-  }
-
-  return <div className="editor" />;
+  return (
+    <div className="editor">
+      {loading ? 'Loading editor...' : null}
+      <Milkdown />
+    </div>
+  );
 }
