@@ -382,16 +382,3 @@ The Write app exemplifies many of these principles:
 ✅ **Subtle hover states** on cards and buttons  
 ✅ **Mobile-first responsive design**  
 ✅ **Clear visual hierarchy** in document cards  
-
----
-
-## Further Reading
-
-- [GNOME Human Interface Guidelines](https://developer.gnome.org/hig/principles.html)
-- [Material Design Guidelines](https://material.io/design)
-- [iOS Human Interface Guidelines](https://developer.apple.com/design/human-interface-guidelines/)
-- [WCAG 2.1 Accessibility Guidelines](https://www.w3.org/WAI/WCAG21/quickref/)
-
----
-
-*These guidelines are living documents. As Fleaoffice evolves, update these guidelines to reflect new patterns and learnings.*
