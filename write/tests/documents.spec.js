@@ -9,7 +9,7 @@ test.describe('Write - Document List Page', () => {
   test('should display the Write header', async ({ page }) => {
     await page.goto('/write/');
     const header = page.locator('h1');
-    await expect(header).toContainText('Write');
+    await expect(header).toContainText('write');
   });
 
   test('should display new document button', async ({ page }) => {

@@ -3,6 +3,7 @@ import { DirectoryEntry } from './DirectoryEntry';
 
 export interface Storage {
   fetchJSON(path: string): Promise<any>;
+  fetchFile(path: string): Promise<string | null>;
   saveJSON(path: string, data: any): Promise<boolean>;
   delete(path: string, recursive?: boolean): Promise<void>;
   saveFile(path: string, content: string | Blob, isText?: boolean): Promise<void>;
@@ -19,6 +20,15 @@ export function useStorage(): Storage {
         throw new Error(`Failed to fetch ${path}`);
       }
       return response.json();
+    },
+
+    async fetchFile(path: string): Promise<string | null> {
+      const response = await fetch(`/api/write/data${path}`);
+      if (!response.ok) {
+        if (response.status === 404) return null;
+        throw new Error(`Failed to fetch ${path}`);
+      }
+      return response.text();
     },
 
     async saveJSON(path: string, data: any): Promise<boolean> {
@@ -57,7 +67,10 @@ export function useStorage(): Storage {
 
     async listDirectory(path: string): Promise<DirectoryEntry[]> {
       const response = await fetch(`/api/write/data${path}`);
-      if (!response.ok) throw new Error(`Failed to list ${path}`);
+      if (!response.ok) {
+        if (response.status === 404) return [];
+        throw new Error(`Failed to list ${path}`);
+      }
       const entries = await response.json();
       // Returns: [{ name: "file.json", type: "file", size: 1234, mtime: 1234567890 }, ...]
       return entries;

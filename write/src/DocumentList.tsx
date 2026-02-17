@@ -22,21 +22,8 @@ export function DocumentList() {
       setLoading(true);
       setError(null);
 
-      // List all files in root data directory
-      const response = await fetch('/api/write/data/');
-      
-      // If directory doesn't exist (404), treat as empty
-      if (response.status === 404) {
-        setDocuments([]);
-        setLoading(false);
-        return;
-      }
-      
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-      
-      const entries = await response.json();
+      // List all files in root data directory (returns [] on 404)
+      const entries = await storage.listDirectory('/');
 
       // Filter for .md files only
       const docs = entries
@@ -69,14 +56,8 @@ export function DocumentList() {
 
     try {
       // Check for duplicates
-      const response = await fetch('/api/write/data/');
-      
-      // If directory doesn't exist, no duplicates possible
-      let exists = false;
-      if (response.ok) {
-        const entries = await response.json();
-        exists = entries.some((e: any) => e.name === filename);
-      }
+      const entries = await storage.listDirectory('/');
+      const exists = entries.some(e => e.name === filename);
 
       if (exists) {
         alert(`A document with the title "${title}" already exists. Please choose a different title.`);

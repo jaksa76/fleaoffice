@@ -43,15 +43,9 @@ export function Editor() {
       setTitle(docTitle);
 
       // Load document content from root directory
-      const response = await fetch(`/api/write/data/${encodeURIComponent(filename)}`);
-      if (response.ok) {
-        const text = await response.text();
-        setContent(text);
-        setInitialContent(text);
-      } else {
-        setContent('');
-        setInitialContent('');
-      }
+      const text = await storage.fetchFile(`/${filename}`);
+      setContent(text ?? '');
+      setInitialContent(text ?? '');
     } catch (err) {
       console.error('Failed to load document:', err);
       setContent('');
@@ -81,14 +75,10 @@ export function Editor() {
       // Check if title changed (rename needed)
       if (newFilename !== filename) {
         // Check for duplicates in root directory
-        const response = await fetch('/api/write/data/');
-        let exists = false;
-        if (response.ok) {
-          const entries = await response.json();
-          exists = entries.some((e: any) => e.name === newFilename);
-        }
+        const entries = await storage.listDirectory('/');
+        const exists = entries.some(e => e.name === newFilename);
 
-        if (exists && newFilename !== filename) {
+        if (exists) {
           setSaveStatus({ message: 'Title already exists', isError: true });
           return;
         }
