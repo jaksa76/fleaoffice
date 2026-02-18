@@ -130,3 +130,4 @@ Documents are stored as `.md` files in the user's Fleabox data directory:
 - **Storage**: Fleabox API (REST endpoints)
 - **Testing**: Playwright
 - **Styling**: CSS (custom styles)
+
