@@ -2,9 +2,9 @@ import { useMemo } from 'react';
 import { DirectoryEntry } from './DirectoryEntry';
 
 export interface Storage {
-  fetchJSON(path: string): Promise<any>;
+  fetchJSON(path: string): Promise<unknown>;
   fetchFile(path: string): Promise<string | null>;
-  saveJSON(path: string, data: any): Promise<boolean>;
+  saveJSON(path: string, data: unknown): Promise<boolean>;
   delete(path: string, recursive?: boolean): Promise<void>;
   saveFile(path: string, content: string | Blob, isText?: boolean): Promise<void>;
   uploadFile(path: string, file: File): Promise<void>;
@@ -13,7 +13,7 @@ export interface Storage {
 
 export function useStorage(): Storage {
   return useMemo(() => ({
-    async fetchJSON(path: string): Promise<any> {
+    async fetchJSON(path: string): Promise<unknown> {
       const response = await fetch(`/api/write/data${path}`);
       if (!response.ok) {
         if (response.status === 404) return null;
@@ -31,7 +31,7 @@ export function useStorage(): Storage {
       return response.text();
     },
 
-    async saveJSON(path: string, data: any): Promise<boolean> {
+    async saveJSON(path: string, data: unknown): Promise<boolean> {
       const response = await fetch(`/api/write/data${path}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },

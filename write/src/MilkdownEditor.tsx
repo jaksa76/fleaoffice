@@ -1,9 +1,11 @@
 import { useRef, useEffect } from 'react';
 import { Milkdown, useEditor } from '@milkdown/react';
 import { Editor, rootCtx, defaultValueCtx, editorViewCtx } from '@milkdown/core';
+import { Ctx } from '@milkdown/ctx';
 import { commonmark } from '@milkdown/preset-commonmark';
 import { listener, listenerCtx } from '@milkdown/plugin-listener';
 import { nord } from '@milkdown/theme-nord';
+import { EditorView } from 'prosemirror-view';
 import '@milkdown/theme-nord/style.css';
 
 interface MilkdownEditorProps {
@@ -12,20 +14,20 @@ interface MilkdownEditorProps {
 }
 
 export function MilkdownEditor({ initialContent, onContentChange }: MilkdownEditorProps) {
-  const editorRef = useRef<any>(null);
+  const editorRef = useRef<EditorView | null>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
   
   const { loading, get } = useEditor((root) => {
     return Editor.make()
-      .config((ctx: any) => {
+      .config((ctx: Ctx) => {
         ctx.set(rootCtx, root);
         ctx.set(defaultValueCtx, initialContent);
       })
       .config(nord)
       .use(commonmark)
       .use(listener)
-      .config((ctx: any) => {
-        ctx.get(listenerCtx).markdownUpdated((_ctx: any, markdown: string) => {
+      .config((ctx: Ctx) => {
+        ctx.get(listenerCtx).markdownUpdated((_ctx: Ctx, markdown: string) => {
           onContentChange(markdown);
         });
       });
@@ -38,7 +40,7 @@ export function MilkdownEditor({ initialContent, onContentChange }: MilkdownEdit
         try {
           const editor = get();
           if (editor) {
-            editor.action((ctx: any) => {
+            editor.action((ctx: Ctx) => {
               const view = ctx.get(editorViewCtx);
               view?.focus();
               editorRef.current = view;
