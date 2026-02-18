@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useStorage } from './storage';
 import { Document } from './Document';
@@ -10,6 +10,9 @@ export function DocumentList() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deletionInProgress, setDeletionInProgress] = useState(false);
+  const [newDocTitle, setNewDocTitle] = useState<string | null>(null);
+  const [newDocError, setNewDocError] = useState<string | null>(null);
+  const newDocInputRef = useRef<HTMLInputElement>(null);
   const storage = useStorage();
   const navigate = useNavigate();
 
@@ -27,8 +30,8 @@ export function DocumentList() {
 
       // Filter for .md files only
       const docs = entries
-        .filter((entry: any) => entry.type === 'file' && entry.name.endsWith('.md'))
-        .map((entry: any) => ({
+        .filter(entry => entry.type === 'file' && entry.name.endsWith('.md'))
+        .map(entry => ({
           filename: entry.name,
           title: filenameToTitle(entry.name),
           modified: entry.mtime,
@@ -36,7 +39,7 @@ export function DocumentList() {
         }));
 
       // Sort by modification time (newest first)
-      docs.sort((a: Document, b: Document) => b.modified - a.modified);
+      docs.sort((a, b) => b.modified - a.modified);
 
       setDocuments(docs);
     } catch (err) {
@@ -47,31 +50,38 @@ export function DocumentList() {
     }
   }
 
-  async function createNewDocument() {
-    // Prompt for title
-    const title = prompt('Document title:');
-    if (!title) return; // User cancelled
+  function openNewDocForm() {
+    setNewDocTitle('');
+    setNewDocError(null);
+    // Focus the input on the next frame after it renders
+    requestAnimationFrame(() => newDocInputRef.current?.focus());
+  }
+
+  function closeNewDocForm() {
+    setNewDocTitle(null);
+    setNewDocError(null);
+  }
+
+  async function submitNewDocument() {
+    const title = newDocTitle?.trim();
+    if (!title) return;
 
     const filename = sanitizeFilename(title) + '.md';
 
     try {
-      // Check for duplicates
       const entries = await storage.listDirectory('/');
       const exists = entries.some(e => e.name === filename);
 
       if (exists) {
-        alert(`A document with the title "${title}" already exists. Please choose a different title.`);
-        return createNewDocument(); // Ask again
+        setNewDocError(`A document named "${title}" already exists.`);
+        return;
       }
 
-      // Create empty document in root directory
       await storage.saveFile(`/${filename}`, '', true);
-
-      // Navigate to editor
       navigate(`/editor/${encodeURIComponent(filename)}`);
     } catch (err) {
       console.error('Failed to create document:', err);
-      alert('Failed to create document');
+      setNewDocError('Failed to create document');
     }
   }
 
@@ -129,12 +139,36 @@ export function DocumentList() {
     <div className="container">
       <div className="header">
         <h1>write</h1>
-        <button className="btn-icon" onClick={createNewDocument} title="New document">
+        <button className="btn-icon" onClick={openNewDocForm} title="New document">
           <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M12 5v14M5 12h14"/>
           </svg>
         </button>
       </div>
+
+      {newDocTitle !== null && (
+        <div className="new-doc-form">
+          <input
+            ref={newDocInputRef}
+            type="text"
+            className="new-doc-input"
+            placeholder="Document title"
+            autoComplete="off"
+            value={newDocTitle}
+            onChange={e => { setNewDocTitle(e.target.value); setNewDocError(null); }}
+            onKeyDown={e => {
+              if (e.key === 'Enter') submitNewDocument();
+              if (e.key === 'Escape') closeNewDocForm();
+            }}
+          />
+          {newDocError && <span className="form-error">{newDocError}</span>}
+          <button className="btn-icon" onClick={closeNewDocForm} title="Cancel">
+            <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M18 6L6 18M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+      )}
 
       <div className="document-list">
         {documents.length === 0 ? (

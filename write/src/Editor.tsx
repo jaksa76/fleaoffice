@@ -20,6 +20,7 @@ export function Editor() {
     isError: false
   });
   const [loading, setLoading] = useState(true);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   const isSaving = useRef(false);
 
   const loadDocument = useCallback(async () => {
@@ -45,10 +46,16 @@ export function Editor() {
     }
   }, [filename, storage]);
 
+  // Auto-cancel delete confirmation after 3 seconds
+  useEffect(() => {
+    if (!confirmingDelete) return;
+    const timeout = setTimeout(() => setConfirmingDelete(false), 3000);
+    return () => clearTimeout(timeout);
+  }, [confirmingDelete]);
+
   // Load document on mount
   useEffect(() => {
     if (!filename) {
-      alert('No document specified');
       navigate('/');
       return;
     }
@@ -109,14 +116,18 @@ export function Editor() {
   const handleDelete = async () => {
     if (!filename) return;
 
-    if (confirm('Delete this document?')) {
-      try {
-        await storage.delete(`/${filename}`);
-        navigate('/');
-      } catch (err) {
-        console.error('Delete failed:', err);
-        setSaveStatus({ message: 'Delete failed', isError: true });
-      }
+    if (!confirmingDelete) {
+      setConfirmingDelete(true);
+      return;
+    }
+
+    setConfirmingDelete(false);
+    try {
+      await storage.delete(`/${filename}`);
+      navigate('/');
+    } catch (err) {
+      console.error('Delete failed:', err);
+      setSaveStatus({ message: 'Delete failed', isError: true });
     }
   };
 
@@ -179,6 +190,16 @@ export function Editor() {
           </svg>
         </button>
 
+        {confirmingDelete && (
+          <>
+            <span className="delete-confirm-text">Delete?</span>
+            <button className="btn-icon" onClick={() => setConfirmingDelete(false)} title="Cancel delete">
+              <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M18 6L6 18M6 6l12 12"/>
+              </svg>
+            </button>
+          </>
+        )}
         <button className="btn-icon delete-btn" onClick={handleDelete} title="Delete document">
           <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <polyline points="3 6 5 6 21 6"/>

@@ -209,6 +209,38 @@ a:focus-visible {
     background-color: rgba(211, 47, 47, 0.1);
 }
 
+/* New Document Form */
+
+.new-doc-form {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 24px;
+    padding: 6px 12px 6px 16px;
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+}
+
+.new-doc-input {
+    flex: 1;
+    font-size: 15px;
+    padding: 8px 0;
+    outline: none;
+    background: transparent;
+    color: #2c3e50;
+}
+
+.new-doc-input::placeholder {
+    color: #bbb;
+}
+
+.form-error {
+    font-size: 13px;
+    color: #d32f2f;
+    white-space: nowrap;
+}
+
 /* Empty State */
 
 .empty-state {
@@ -287,6 +319,14 @@ a:focus-visible {
 
 .btn-icon.delete-btn:hover {
     background-color: rgba(211, 47, 47, 0.1);
+}
+
+/* Delete confirmation */
+
+.delete-confirm-text {
+    font-size: 13px;
+    color: #d32f2f;
+    white-space: nowrap;
 }
 
 /* Editor Area */
