@@ -1,0 +1,134 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  changes:
+    name: Detect changed apps
+    runs-on: ubuntu-latest
+    outputs:
+      write:  ${{ steps.filter.outputs.write }}
+      agenda: ${{ steps.filter.outputs.agenda }}
+      list:   ${{ steps.filter.outputs.list }}
+      show:   ${{ steps.filter.outputs.show }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            write:
+              - 'write/**'
+            agenda:
+              - 'agenda/**'
+            list:
+              - 'list/**'
+            show:
+              - 'show/**'
+
+  write:
+    name: Write — lint + build + test
+    needs: [changes]
+    if: needs.changes.outputs.write == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: write/package-lock.json
+      - name: Install dependencies
+        working-directory: write
+        run: npm ci
+      - name: Lint
+        working-directory: write
+        run: npm run lint
+      - name: Install Fleabox
+        run: |
+          curl -fsSL https://github.com/jaksa76/fleabox/releases/download/v2.0.4/fleabox -o fleabox
+          chmod +x fleabox
+          sudo mv fleabox /usr/local/bin/fleabox
+      - name: Install Playwright browsers
+        working-directory: write
+        run: npx playwright install --with-deps chromium
+      - name: Run tests
+        working-directory: write
+        run: npm test
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-write
+          path: write/playwright-report/
+          retention-days: 14
+
+  agenda:
+    name: Agenda — lint + build
+    needs: [changes]
+    if: needs.changes.outputs.agenda == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: agenda/package-lock.json
+      - name: Install dependencies
+        working-directory: agenda
+        run: npm ci
+      - name: Lint
+        working-directory: agenda
+        run: npm run lint
+      - name: Build
+        working-directory: agenda
+        run: npm run build
+
+  list:
+    name: List — lint + build
+    needs: [changes]
+    if: needs.changes.outputs.list == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: list/package-lock.json
+      - name: Install dependencies
+        working-directory: list
+        run: npm ci
+      - name: Lint
+        working-directory: list
+        run: npm run lint
+      - name: Build
+        working-directory: list
+        run: npm run build
+
+  show:
+    name: Show — lint + build
+    needs: [changes]
+    if: needs.changes.outputs.show == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: show/package-lock.json
+      - name: Install dependencies
+        working-directory: show
+        run: npm ci
+      - name: Lint
+        working-directory: show
+        run: npm run lint
+      - name: Build
+        working-directory: show
+        run: npm run build
