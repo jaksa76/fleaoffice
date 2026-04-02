@@ -9,12 +9,15 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "fleabox": "npm run build && fleabox --dev --apps-dir dist",
-    "test": "npm run build && playwright test",
+    "test": "npm run test:unit && npm run build && playwright test",
+    "test:unit": "vitest run",
+    "test:e2e": "npm run build && playwright test",
     "clean": "rm -rf dist test-results playwright-report test-results.json"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",
     "@playwright/test": "^1.58.1",
+    "vitest": "^3.0.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.4",
@@ -28,6 +31,7 @@
   },
   "dependencies": {
     "react": "^19.2.4",
-    "react-dom": "^19.2.4"
+    "react-dom": "^19.2.4",
+    "react-router-dom": "^7.0.0"
   }
 }

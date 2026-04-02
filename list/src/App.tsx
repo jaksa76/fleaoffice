@@ -1,10 +1,14 @@
-function App() {
-  return (
-    <div style={{ padding: '2rem' }}>
-      <h1>List</h1>
-      <p>Task and todo list manager placeholder</p>
-    </div>
-  )
-}
+import { HashRouter, Routes, Route } from 'react-router-dom';
+import { CollectionList } from './CollectionList';
+import { CollectionView } from './CollectionView';
 
-export default App
+export default function App() {
+  return (
+    <HashRouter>
+      <Routes>
+        <Route path="/" element={<CollectionList />} />
+        <Route path="/collection/:slug" element={<CollectionView />} />
+      </Routes>
+    </HashRouter>
+  );
+}
