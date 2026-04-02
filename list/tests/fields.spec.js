@@ -75,8 +75,8 @@ test.describe('List - Add Field', () => {
     await gotoCollectionView(page, slug);
     await clickAddField(page);
 
-    await expect(page.locator('.new-field-form')).toBeVisible();
-    await expect(page.locator('.new-field-form input')).toBeFocused();
+    await expect(page.locator('.item-new-field-form')).toBeVisible();
+    await expect(page.locator('.item-new-field-input')).toBeFocused();
   });
 
   test('should close new-field form on Escape', async ({ request, page }) => {
@@ -85,10 +85,10 @@ test.describe('List - Add Field', () => {
 
     await gotoCollectionView(page, slug);
     await clickAddField(page);
-    await expect(page.locator('.new-field-form')).toBeVisible();
+    await expect(page.locator('.item-new-field-form')).toBeVisible();
 
-    await page.locator('.new-field-form input').press('Escape');
-    await expect(page.locator('.new-field-form')).not.toBeVisible();
+    await page.locator('.item-new-field-input').press('Escape');
+    await expect(page.locator('.item-new-field-form')).not.toBeVisible();
   });
 
   test('should add a text field and persist it in schema.json', async ({ request, page }) => {
@@ -98,10 +98,10 @@ test.describe('List - Add Field', () => {
     await gotoCollectionView(page, slug);
     await clickAddField(page);
 
-    await page.locator('.new-field-form input').fill('Priority');
-    await page.locator('.new-field-form input').press('Enter');
+    await page.locator('.item-new-field-input').fill('Priority');
+    await page.locator('.item-new-field-input').press('Enter');
 
-    await expect(page.locator('.new-field-form')).not.toBeVisible();
+    await expect(page.locator('.item-new-field-form')).not.toBeVisible();
 
     const res = await request.get(`/api/list/data/${slug}/schema.json`);
     const schema = await res.json();
@@ -117,10 +117,10 @@ test.describe('List - Add Field', () => {
     await gotoCollectionView(page, slug);
     await clickAddField(page);
 
-    await page.locator('.new-field-form input').fill('Due Date');
-    await page.locator('.new-field-form input').press('Enter');
+    await page.locator('.item-new-field-input').fill('Due Date');
+    await page.locator('.item-new-field-input').press('Enter');
 
-    await expect(page.locator('.new-field-form')).not.toBeVisible();
+    await expect(page.locator('.item-new-field-form')).not.toBeVisible();
 
     const res = await request.get(`/api/list/data/${slug}/schema.json`);
     expect(res.ok()).toBeTruthy();
@@ -140,10 +140,10 @@ test.describe('List - Add Field', () => {
     await gotoCollectionView(page, slug);
     await clickAddField(page);
 
-    await page.locator('.new-field-form input').fill('Status');
-    await page.locator('.new-field-form input').press('Enter');
+    await page.locator('.item-new-field-input').fill('Status');
+    await page.locator('.item-new-field-input').press('Enter');
 
-    await expect(page.locator('.new-field-form')).not.toBeVisible();
+    await expect(page.locator('.item-new-field-form')).not.toBeVisible();
 
     const res = await request.get(`/api/list/data/${slug}/items.json`);
     const items = await res.json();
@@ -162,10 +162,10 @@ test.describe('List - Add Field', () => {
     await gotoCollectionView(page, slug);
     await clickAddField(page);
 
-    await page.locator('.new-field-form input').fill('Done');
-    await page.locator('.new-field-form input').press('Enter');
+    await page.locator('.item-new-field-input').fill('Done');
+    await page.locator('.item-new-field-input').press('Enter');
 
-    await expect(page.locator('.new-field-form')).not.toBeVisible();
+    await expect(page.locator('.item-new-field-form')).not.toBeVisible();
 
     const res = await request.get(`/api/list/data/${slug}/items.json`);
     const items = await res.json();
@@ -183,9 +183,9 @@ test.describe('List - Add Field', () => {
 
     // Add a field via the seed item's card
     await clickAddField(page);
-    await page.locator('.new-field-form input').fill('Notes');
-    await page.locator('.new-field-form input').press('Enter');
-    await expect(page.locator('.new-field-form')).not.toBeVisible();
+    await page.locator('.item-new-field-input').fill('Notes');
+    await page.locator('.item-new-field-input').press('Enter');
+    await expect(page.locator('.item-new-field-form')).not.toBeVisible();
 
     // Now add a new item
     await page.locator('button[title="New item"]').click();
@@ -264,8 +264,8 @@ test.describe('List - Add Field', () => {
     await gotoCollectionView(page, slug);
 
     await clickAddField(page);
-    await page.locator('.new-field-form input').fill('Priority');
-    await page.locator('.new-field-form input').press('Enter');
+    await page.locator('.item-new-field-input').fill('Priority');
+    await page.locator('.item-new-field-input').press('Enter');
 
     await expect(page.locator('.form-error')).toBeVisible();
 

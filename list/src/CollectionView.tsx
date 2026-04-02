@@ -122,7 +122,7 @@ export function CollectionView() {
     if (loading) return <div className="loading">Loading...</div>;
     if (error) return <div className="error">{error}</div>;
     if (items.length === 0) return <div className="empty-state">No items yet. Add one to get started.</div>;
-    return items.map(item => (
+    return items.map((item, index) => (
       <div key={item.id} className="item-row">
         <span className="item-name">{typeof item.name === 'string' ? item.name : 'Untitled'}</span>
         {fields.map(f => (
@@ -135,12 +135,36 @@ export function CollectionView() {
             </span>
           </div>
         ))}
-        <button className="btn-add-field" onClick={openNewFieldForm} title="Add field">
-          <svg className="icon-small" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M12 5v14M5 12h14"/>
-          </svg>
-          add field
-        </button>
+        {newFieldForm !== null ? (
+          <div className="item-new-field-form">
+            <input
+              ref={index === 0 ? newFieldInputRef : undefined}
+              type="text"
+              className="item-new-field-input"
+              placeholder="Field name"
+              autoComplete="off"
+              value={newFieldForm.name}
+              onChange={e => { setNewFieldForm({ name: e.target.value }); setAddFieldError(null); }}
+              onKeyDown={e => {
+                if (e.key === 'Enter') submitNewField();
+                if (e.key === 'Escape') setNewFieldForm(null);
+              }}
+            />
+            {index === 0 && addFieldError && <span className="form-error">{addFieldError}</span>}
+            <button className="btn-icon btn-icon-small" onClick={() => setNewFieldForm(null)} title="Cancel">
+              <svg className="icon-small" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M18 6L6 18M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+        ) : (
+          <button className="btn-add-field" onClick={openNewFieldForm} title="Add field">
+            <svg className="icon-small" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M12 5v14M5 12h14"/>
+            </svg>
+            add field
+          </button>
+        )}
       </div>
     ));
   }
@@ -178,30 +202,6 @@ export function CollectionView() {
           />
           {addError && <span className="form-error">{addError}</span>}
           <button className="btn-icon" onClick={closeNewItemForm} title="Cancel">
-            <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M18 6L6 18M6 6l12 12"/>
-            </svg>
-          </button>
-        </div>
-      )}
-
-      {newFieldForm !== null && (
-        <div className="new-field-form">
-          <input
-            ref={newFieldInputRef}
-            type="text"
-            className="new-doc-input"
-            placeholder="Field name"
-            autoComplete="off"
-            value={newFieldForm.name}
-            onChange={e => { setNewFieldForm({ ...newFieldForm, name: e.target.value }); setAddFieldError(null); }}
-            onKeyDown={e => {
-              if (e.key === 'Enter') submitNewField();
-              if (e.key === 'Escape') setNewFieldForm(null);
-            }}
-          />
-          {addFieldError && <span className="form-error">{addFieldError}</span>}
-          <button className="btn-icon" onClick={() => setNewFieldForm(null)} title="Cancel">
             <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M18 6L6 18M6 6l12 12"/>
             </svg>
