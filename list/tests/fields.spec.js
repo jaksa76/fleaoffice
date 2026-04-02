@@ -77,7 +77,6 @@ test.describe('List - Add Field', () => {
 
     await expect(page.locator('.new-field-form')).toBeVisible();
     await expect(page.locator('.new-field-form input')).toBeFocused();
-    await expect(page.locator('.new-field-form select')).toBeVisible();
   });
 
   test('should close new-field form on Escape', async ({ request, page }) => {
@@ -111,7 +110,7 @@ test.describe('List - Add Field', () => {
     expect(schema.fields[0].type).toBe('text');
   });
 
-  test('should persist new field in schema.json with correct type', async ({ request, page }) => {
+  test('should persist new field in schema.json with type text', async ({ request, page }) => {
     const name = TEST_PREFIX + 'persist-' + Date.now();
     const slug = await createCollectionWithItem(request, name);
 
@@ -119,7 +118,6 @@ test.describe('List - Add Field', () => {
     await clickAddField(page);
 
     await page.locator('.new-field-form input').fill('Due Date');
-    await page.locator('.new-field-form select').selectOption('date');
     await page.locator('.new-field-form input').press('Enter');
 
     await expect(page.locator('.new-field-form')).not.toBeVisible();
@@ -129,7 +127,7 @@ test.describe('List - Add Field', () => {
     const schema = await res.json();
     expect(schema.fields).toHaveLength(1);
     expect(schema.fields[0].name).toBe('Due Date');
-    expect(schema.fields[0].type).toBe('date');
+    expect(schema.fields[0].type).toBe('text');
     expect(schema.fields[0].key).toBeTruthy();
   });
 
@@ -155,8 +153,8 @@ test.describe('List - Add Field', () => {
     expect(items[0][fieldKey]).toBe('');
   });
 
-  test('should add default false value to existing items when a checkbox field is added', async ({ request, page }) => {
-    const name = TEST_PREFIX + 'checkbox-' + Date.now();
+  test('should add empty string default to existing items when a field is added', async ({ request, page }) => {
+    const name = TEST_PREFIX + 'default-val-' + Date.now();
     const slug = await createCollectionViaApi(request, name, [], [
       { id: 'item1', name: 'Task One' }
     ]);
@@ -165,7 +163,6 @@ test.describe('List - Add Field', () => {
     await clickAddField(page);
 
     await page.locator('.new-field-form input').fill('Done');
-    await page.locator('.new-field-form select').selectOption('checkbox');
     await page.locator('.new-field-form input').press('Enter');
 
     await expect(page.locator('.new-field-form')).not.toBeVisible();
@@ -175,7 +172,7 @@ test.describe('List - Add Field', () => {
     const schemaRes = await request.get(`/api/list/data/${slug}/schema.json`);
     const schema = await schemaRes.json();
     const fieldKey = schema.fields[0].key;
-    expect(items[0][fieldKey]).toBe(false);
+    expect(items[0][fieldKey]).toBe('');
   });
 
   test('should include field default value in new items after field is added', async ({ request, page }) => {
@@ -217,21 +214,21 @@ test.describe('List - Add Field', () => {
         name,
         fields: [
           { key: 'priority', name: 'Priority', type: 'text' },
-          { key: 'done', name: 'Done', type: 'checkbox' }
+          { key: 'status', name: 'Status', type: 'text' }
         ]
       })
     });
     await request.put(`/api/list/data/${slug}/items.json`, {
       headers: { 'Content-Type': 'application/json' },
       data: JSON.stringify([
-        { id: 'i1', name: 'Task A', priority: 'High', done: false }
+        { id: 'i1', name: 'Task A', priority: 'High', status: 'Open' }
       ])
     });
 
     await gotoCollectionView(page, slug);
 
     await expect(page.locator('.item-field-label', { hasText: 'Priority' })).toBeVisible();
-    await expect(page.locator('.item-field-label', { hasText: 'Done' })).toBeVisible();
+    await expect(page.locator('.item-field-label', { hasText: 'Status' })).toBeVisible();
   });
 
   test('should display field values in item cards', async ({ request, page }) => {

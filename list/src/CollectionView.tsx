@@ -4,12 +4,10 @@ import { useStorage } from './storage';
 import { Item, generateId } from './Item';
 import { nameToSlug } from './slug';
 
-type FieldType = 'text' | 'number' | 'date' | 'checkbox';
-
 interface Field {
   key: string;
   name: string;
-  type: FieldType;
+  type: string;
 }
 
 interface Schema {
@@ -27,7 +25,7 @@ export function CollectionView() {
   const [error, setError] = useState<string | null>(null);
   const [newItemName, setNewItemName] = useState<string | null>(null);
   const [addError, setAddError] = useState<string | null>(null);
-  const [newFieldForm, setNewFieldForm] = useState<{ name: string; type: FieldType } | null>(null);
+  const [newFieldForm, setNewFieldForm] = useState<{ name: string } | null>(null);
   const [addFieldError, setAddFieldError] = useState<string | null>(null);
   const newItemInputRef = useRef<HTMLInputElement>(null);
   const newFieldInputRef = useRef<HTMLInputElement>(null);
@@ -87,7 +85,7 @@ export function CollectionView() {
   }
 
   function openNewFieldForm() {
-    setNewFieldForm({ name: '', type: 'text' });
+    setNewFieldForm({ name: '' });
     setAddFieldError(null);
     requestAnimationFrame(() => newFieldInputRef.current?.focus());
   }
@@ -102,9 +100,9 @@ export function CollectionView() {
       return;
     }
 
-    const newField: Field = { key, name, type: newFieldForm!.type };
+    const newField: Field = { key, name, type: 'text' };
     const updatedFields = [...fields, newField];
-    const defaultValue = newField.type === 'checkbox' ? false : newField.type === 'number' ? null : '';
+    const defaultValue = '';
     const updatedItems = items.map(item => ({ ...item, [newField.key]: defaultValue }));
 
     try {
@@ -202,15 +200,6 @@ export function CollectionView() {
               if (e.key === 'Escape') setNewFieldForm(null);
             }}
           />
-          <select
-            value={newFieldForm.type}
-            onChange={e => setNewFieldForm({ ...newFieldForm, type: e.target.value as FieldType })}
-          >
-            <option value="text">Text</option>
-            <option value="number">Number</option>
-            <option value="date">Date</option>
-            <option value="checkbox">Checkbox</option>
-          </select>
           {addFieldError && <span className="form-error">{addFieldError}</span>}
           <button className="btn-icon" onClick={() => setNewFieldForm(null)} title="Cancel">
             <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
