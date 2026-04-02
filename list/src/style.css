@@ -280,9 +280,6 @@ a:focus-visible {
     gap: 8px;
 }
 
-.header .btn-icon-right-2 {
-    right: 48px;
-}
 
 .item-row {
     background: white;
@@ -318,6 +315,23 @@ a:focus-visible {
 
 .item-field-value {
     color: #2c3e50;
+}
+
+.btn-add-field {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #f0f0f0;
+    font-size: 12px;
+    color: #bbb;
+    width: 100%;
+    transition: color 0.2s;
+}
+
+.btn-add-field:hover {
+    color: #999;
 }
 
 /* New Field Form */

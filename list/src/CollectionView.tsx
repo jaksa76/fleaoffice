@@ -137,6 +137,12 @@ export function CollectionView() {
             </span>
           </div>
         ))}
+        <button className="btn-add-field" onClick={openNewFieldForm} title="Add field">
+          <svg className="icon-small" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M12 5v14M5 12h14"/>
+          </svg>
+          add field
+        </button>
       </div>
     ));
   }
@@ -150,11 +156,6 @@ export function CollectionView() {
           </svg>
         </Link>
         <h1>{collectionName}</h1>
-        <button className="btn-icon btn-icon-right-2" onClick={openNewFieldForm} title="Add field">
-          <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2v-4M9 21H5a2 2 0 0 1-2-2v-4m0 0h18"/>
-          </svg>
-        </button>
         <button className="btn-icon" onClick={openNewItemForm} title="New item">
           <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M12 5v14M5 12h14"/>
