@@ -27,6 +27,9 @@ export function CollectionView() {
   const [addError, setAddError] = useState<string | null>(null);
   const [newFieldForm, setNewFieldForm] = useState<{ name: string } | null>(null);
   const [addFieldError, setAddFieldError] = useState<string | null>(null);
+  const [editingCell, setEditingCell] = useState<{ itemId: string; fieldKey: string } | null>(null);
+  const [editValue, setEditValue] = useState('');
+  const cancelEdit = useRef(false);
   const newItemInputRef = useRef<HTMLInputElement>(null);
   const newFieldInputRef = useRef<HTMLInputElement>(null);
 
@@ -118,6 +121,27 @@ export function CollectionView() {
     }
   }
 
+  function startEdit(itemId: string, fieldKey: string, currentValue: unknown) {
+    setEditingCell({ itemId, fieldKey });
+    setEditValue(String(currentValue ?? ''));
+    cancelEdit.current = false;
+  }
+
+  async function commitEdit(itemId: string, fieldKey: string) {
+    if (cancelEdit.current) { cancelEdit.current = false; return; }
+    setEditingCell(null);
+    const updatedItems = items.map(item =>
+      item.id === itemId ? { ...item, [fieldKey]: editValue } : item
+    );
+    setItems(updatedItems);
+    try {
+      await storage.saveJSON(`/${slug}/items.json`, updatedItems);
+    } catch (err) {
+      console.error('Failed to save field value:', err);
+      setItems(items);
+    }
+  }
+
   function renderItems() {
     if (loading) return <div className="loading">Loading...</div>;
     if (error) return <div className="error">{error}</div>;
@@ -125,16 +149,35 @@ export function CollectionView() {
     return items.map((item, index) => (
       <div key={item.id} className="item-row">
         <span className="item-name">{typeof item.name === 'string' ? item.name : 'Untitled'}</span>
-        {fields.map(f => (
-          <div key={f.key} className="item-field-row">
-            <span className="item-field-label">{f.name}</span>
-            <span className="item-field-value">
-              {f.type === 'checkbox'
-                ? <input type="checkbox" checked={!!item[f.key]} readOnly />
-                : String(item[f.key] ?? '')}
-            </span>
-          </div>
-        ))}
+        {fields.map(f => {
+          const isEditing = editingCell?.itemId === item.id && editingCell?.fieldKey === f.key;
+          return (
+            <div key={f.key} className="item-field-row">
+              <span className="item-field-label">{f.name}</span>
+              {isEditing ? (
+                <input
+                  type="text"
+                  className="item-field-edit"
+                  autoFocus
+                  value={editValue}
+                  onChange={e => setEditValue(e.target.value)}
+                  onBlur={() => commitEdit(item.id, f.key)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') { e.currentTarget.blur(); }
+                    if (e.key === 'Escape') { cancelEdit.current = true; setEditingCell(null); }
+                  }}
+                />
+              ) : (
+                <span
+                  className="item-field-value"
+                  onClick={() => startEdit(item.id, f.key, item[f.key])}
+                >
+                  {String(item[f.key] ?? '')}
+                </span>
+              )}
+            </div>
+          );
+        })}
         {newFieldForm !== null ? (
           <div className="item-new-field-form">
             <input

@@ -315,6 +315,22 @@ a:focus-visible {
 
 .item-field-value {
     color: #2c3e50;
+    cursor: text;
+    flex: 1;
+    min-width: 0;
+}
+
+.item-field-edit {
+    flex: 1;
+    min-width: 0;
+    font-family: inherit;
+    font-size: 14px;
+    color: #2c3e50;
+    border: none;
+    border-bottom: 1px solid #1976d2;
+    outline: none;
+    background: transparent;
+    padding: 0;
 }
 
 .btn-add-field {
