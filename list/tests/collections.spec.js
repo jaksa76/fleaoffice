@@ -31,7 +31,7 @@ test.describe('List - Collection List Page', () => {
     if (!res?.ok()) return;
     const entries = await res.json().catch(() => []);
     for (const entry of entries) {
-      if (entry.type === 'directory' && entry.name.startsWith(TEST_PREFIX)) {
+      if (entry.type === 'dir' && entry.name.startsWith(TEST_PREFIX)) {
         await deleteCollectionViaApi(request, entry.name);
       }
     }

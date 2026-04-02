@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useStorage } from './storage';
 import { Collection } from './Collection';
 import { CollectionCard } from './CollectionCard';
@@ -14,11 +14,7 @@ export function CollectionList() {
   const newNameInputRef = useRef<HTMLInputElement>(null);
   const storage = useStorage();
 
-  useEffect(() => {
-    loadCollections();
-  }, []);
-
-  async function loadCollections() {
+  const loadCollections = useCallback(async function loadCollections() {
     try {
       setLoading(true);
       setError(null);
@@ -47,7 +43,11 @@ export function CollectionList() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [storage]);
+
+  useEffect(() => {
+    loadCollections();
+  }, [loadCollections]);
 
   function openNewForm() {
     setNewName('');
