@@ -2,10 +2,19 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useStorage } from './storage';
 import { Item, generateId } from './Item';
+import { nameToSlug } from './slug';
+
+type FieldType = 'text' | 'number' | 'date' | 'checkbox';
+
+interface Field {
+  key: string;
+  name: string;
+  type: FieldType;
+}
 
 interface Schema {
   name: string;
-  fields: unknown[];
+  fields: Field[];
 }
 
 export function CollectionView() {
@@ -13,11 +22,15 @@ export function CollectionView() {
   const storage = useStorage();
   const [collectionName, setCollectionName] = useState<string>(slug ?? '');
   const [items, setItems] = useState<Item[]>([]);
+  const [fields, setFields] = useState<Field[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [newItemName, setNewItemName] = useState<string | null>(null);
   const [addError, setAddError] = useState<string | null>(null);
+  const [newFieldForm, setNewFieldForm] = useState<{ name: string; type: FieldType } | null>(null);
+  const [addFieldError, setAddFieldError] = useState<string | null>(null);
   const newItemInputRef = useRef<HTMLInputElement>(null);
+  const newFieldInputRef = useRef<HTMLInputElement>(null);
 
   const loadData = useCallback(async () => {
     if (!slug) return;
@@ -27,6 +40,7 @@ export function CollectionView() {
       const schema = await storage.fetchJSON(`/${slug}/schema.json`) as Schema | null;
       const loaded = await storage.fetchJSON(`/${slug}/items.json`) as Item[] | null;
       if (schema) setCollectionName(schema.name);
+      setFields(Array.isArray(schema?.fields) ? schema.fields as Field[] : []);
       setItems(Array.isArray(loaded) ? loaded : []);
     } catch (err) {
       console.error('Failed to load collection:', err);
@@ -55,7 +69,11 @@ export function CollectionView() {
     const name = newItemName?.trim();
     if (!name) return;
 
-    const newItem: Item = { id: generateId(), name };
+    const defaults: Record<string, unknown> = {};
+    for (const f of fields) {
+      defaults[f.key] = f.type === 'checkbox' ? false : f.type === 'number' ? null : '';
+    }
+    const newItem: Item = { id: generateId(), name, ...defaults };
     const updatedItems = [...items, newItem];
 
     try {
@@ -68,13 +86,54 @@ export function CollectionView() {
     }
   }
 
-  function renderContent() {
+  function openNewFieldForm() {
+    setNewFieldForm({ name: '', type: 'text' });
+    setAddFieldError(null);
+    requestAnimationFrame(() => newFieldInputRef.current?.focus());
+  }
+
+  async function submitNewField() {
+    const name = newFieldForm?.name.trim();
+    if (!name) return;
+
+    const key = nameToSlug(name) || name.toLowerCase().replace(/\s+/g, '-');
+    if (fields.some(f => f.key === key)) {
+      setAddFieldError('A field with this name already exists');
+      return;
+    }
+
+    const newField: Field = { key, name, type: newFieldForm!.type };
+    const updatedFields = [...fields, newField];
+    const defaultValue = newField.type === 'checkbox' ? false : newField.type === 'number' ? null : '';
+    const updatedItems = items.map(item => ({ ...item, [newField.key]: defaultValue }));
+
+    try {
+      await storage.saveJSON(`/${slug}/schema.json`, { name: collectionName, fields: updatedFields });
+      await storage.saveJSON(`/${slug}/items.json`, updatedItems);
+      setFields(updatedFields);
+      setItems(updatedItems);
+      setNewFieldForm(null);
+      setAddFieldError(null);
+    } catch (err) {
+      console.error('Failed to add field:', err);
+      setAddFieldError('Failed to add field');
+    }
+  }
+
+  function renderItems() {
     if (loading) return <div className="loading">Loading...</div>;
     if (error) return <div className="error">{error}</div>;
     if (items.length === 0) return <div className="empty-state">No items yet. Add one to get started.</div>;
     return items.map(item => (
       <div key={item.id} className="item-row">
         <span className="item-name">{typeof item.name === 'string' ? item.name : 'Untitled'}</span>
+        {fields.map(f => (
+          <span key={f.key} className="item-field">
+            {f.type === 'checkbox'
+              ? <input type="checkbox" checked={!!item[f.key]} readOnly />
+              : String(item[f.key] ?? '')}
+          </span>
+        ))}
       </div>
     ));
   }
@@ -119,8 +178,53 @@ export function CollectionView() {
         </div>
       )}
 
+      <div className="fields-header">
+        <span className="field-header-name">name</span>
+        {fields.map(f => (
+          <span key={f.key} className="field-header-cell">{f.name}</span>
+        ))}
+        <button className="btn-icon btn-icon-small" onClick={openNewFieldForm} title="Add field">
+          <svg className="icon-small" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M12 5v14M5 12h14"/>
+          </svg>
+        </button>
+      </div>
+
+      {newFieldForm !== null && (
+        <div className="new-field-form">
+          <input
+            ref={newFieldInputRef}
+            type="text"
+            className="new-doc-input"
+            placeholder="Field name"
+            autoComplete="off"
+            value={newFieldForm.name}
+            onChange={e => { setNewFieldForm({ ...newFieldForm, name: e.target.value }); setAddFieldError(null); }}
+            onKeyDown={e => {
+              if (e.key === 'Enter') submitNewField();
+              if (e.key === 'Escape') setNewFieldForm(null);
+            }}
+          />
+          <select
+            value={newFieldForm.type}
+            onChange={e => setNewFieldForm({ ...newFieldForm, type: e.target.value as FieldType })}
+          >
+            <option value="text">Text</option>
+            <option value="number">Number</option>
+            <option value="date">Date</option>
+            <option value="checkbox">Checkbox</option>
+          </select>
+          {addFieldError && <span className="form-error">{addFieldError}</span>}
+          <button className="btn-icon" onClick={() => setNewFieldForm(null)} title="Cancel">
+            <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M18 6L6 18M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+      )}
+
       <div className="item-list">
-        {renderContent()}
+        {renderItems()}
       </div>
     </div>
   );
