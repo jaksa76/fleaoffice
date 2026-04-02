@@ -40,14 +40,12 @@ test.describe('List - Add Field', () => {
     }
   });
 
-  test('should show column headers row with name and add-field button', async ({ request, page }) => {
+  test('should show add-field button in the header', async ({ request, page }) => {
     const name = TEST_PREFIX + 'headers-' + Date.now();
     const slug = await createCollectionViaApi(request, name);
 
     await gotoCollectionView(page, slug);
 
-    await expect(page.locator('.fields-header')).toBeVisible();
-    await expect(page.locator('.field-header-name')).toBeVisible();
     await expect(page.locator('button[title="Add field"]')).toBeVisible();
   });
 
@@ -75,7 +73,7 @@ test.describe('List - Add Field', () => {
     await expect(page.locator('.new-field-form')).not.toBeVisible();
   });
 
-  test('should add a text field and show it as a column header', async ({ request, page }) => {
+  test('should add a text field and persist it in schema.json', async ({ request, page }) => {
     const name = TEST_PREFIX + 'add-text-' + Date.now();
     const slug = await createCollectionViaApi(request, name);
 
@@ -85,11 +83,16 @@ test.describe('List - Add Field', () => {
     await page.locator('.new-field-form input').fill('Priority');
     await page.locator('.new-field-form input').press('Enter');
 
-    await expect(page.locator('.field-header-cell', { hasText: 'Priority' })).toBeVisible();
     await expect(page.locator('.new-field-form')).not.toBeVisible();
+
+    const res = await request.get(`/api/list/data/${slug}/schema.json`);
+    const schema = await res.json();
+    expect(schema.fields).toHaveLength(1);
+    expect(schema.fields[0].name).toBe('Priority');
+    expect(schema.fields[0].type).toBe('text');
   });
 
-  test('should persist new field in schema.json', async ({ request, page }) => {
+  test('should persist new field in schema.json with correct type', async ({ request, page }) => {
     const name = TEST_PREFIX + 'persist-' + Date.now();
     const slug = await createCollectionViaApi(request, name);
 
@@ -100,7 +103,7 @@ test.describe('List - Add Field', () => {
     await page.locator('.new-field-form select').selectOption('date');
     await page.locator('.new-field-form input').press('Enter');
 
-    await expect(page.locator('.field-header-cell', { hasText: 'Due Date' })).toBeVisible();
+    await expect(page.locator('.new-field-form')).not.toBeVisible();
 
     const res = await request.get(`/api/list/data/${slug}/schema.json`);
     expect(res.ok()).toBeTruthy();
@@ -132,7 +135,7 @@ test.describe('List - Add Field', () => {
     await page.locator('.new-field-form input').fill('Status');
     await page.locator('.new-field-form input').press('Enter');
 
-    await expect(page.locator('.field-header-cell', { hasText: 'Status' })).toBeVisible();
+    await expect(page.locator('.new-field-form')).not.toBeVisible();
 
     const res = await request.get(`/api/list/data/${slug}/items.json`);
     const items = await res.json();
@@ -164,7 +167,7 @@ test.describe('List - Add Field', () => {
     await page.locator('.new-field-form select').selectOption('checkbox');
     await page.locator('.new-field-form input').press('Enter');
 
-    await expect(page.locator('.field-header-cell', { hasText: 'Done' })).toBeVisible();
+    await expect(page.locator('.new-field-form')).not.toBeVisible();
 
     const res = await request.get(`/api/list/data/${slug}/items.json`);
     const items = await res.json();
@@ -184,7 +187,7 @@ test.describe('List - Add Field', () => {
     await page.locator('button[title="Add field"]').click();
     await page.locator('.new-field-form input').fill('Notes');
     await page.locator('.new-field-form input').press('Enter');
-    await expect(page.locator('.field-header-cell', { hasText: 'Notes' })).toBeVisible();
+    await expect(page.locator('.new-field-form')).not.toBeVisible();
 
     // Now add a new item
     await page.locator('button[title="New item"]').click();
@@ -202,7 +205,7 @@ test.describe('List - Add Field', () => {
     expect(items[0][fieldKey]).toBe('');
   });
 
-  test('should load existing fields from schema on page load', async ({ request, page }) => {
+  test('should display field labels and values in item cards', async ({ request, page }) => {
     const name = TEST_PREFIX + 'load-fields-' + Date.now();
     const slug = nameToSlug(name);
 
@@ -218,16 +221,18 @@ test.describe('List - Add Field', () => {
     });
     await request.put(`/api/list/data/${slug}/items.json`, {
       headers: { 'Content-Type': 'application/json' },
-      data: JSON.stringify([])
+      data: JSON.stringify([
+        { id: 'i1', name: 'Task A', priority: 'High', done: false }
+      ])
     });
 
     await gotoCollectionView(page, slug);
 
-    await expect(page.locator('.field-header-cell', { hasText: 'Priority' })).toBeVisible();
-    await expect(page.locator('.field-header-cell', { hasText: 'Done' })).toBeVisible();
+    await expect(page.locator('.item-field-label', { hasText: 'Priority' })).toBeVisible();
+    await expect(page.locator('.item-field-label', { hasText: 'Done' })).toBeVisible();
   });
 
-  test('should display field values in item rows', async ({ request, page }) => {
+  test('should display field values in item cards', async ({ request, page }) => {
     const name = TEST_PREFIX + 'display-vals-' + Date.now();
     const slug = nameToSlug(name);
 
@@ -247,7 +252,7 @@ test.describe('List - Add Field', () => {
 
     await gotoCollectionView(page, slug);
 
-    await expect(page.locator('.item-field', { hasText: 'High' })).toBeVisible();
+    await expect(page.locator('.item-field-value', { hasText: 'High' })).toBeVisible();
   });
 
   test('should reject duplicate field names', async ({ request, page }) => {
@@ -274,7 +279,10 @@ test.describe('List - Add Field', () => {
     await page.locator('.new-field-form input').press('Enter');
 
     await expect(page.locator('.form-error')).toBeVisible();
-    // Should still have only one field header
-    await expect(page.locator('.field-header-cell')).toHaveCount(1);
+
+    // Schema should still have only one field
+    const res = await request.get(`/api/list/data/${slug}/schema.json`);
+    const schema = await res.json();
+    expect(schema.fields).toHaveLength(1);
   });
 });
