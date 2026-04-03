@@ -152,7 +152,11 @@ export function CollectionView() {
         {fields.map(f => {
           const isEditing = editingCell?.itemId === item.id && editingCell?.fieldKey === f.key;
           return (
-            <div key={f.key} className="item-field-row">
+            <div
+              key={f.key}
+              className={`item-field-row${isEditing ? '' : ' item-field-row-clickable'}`}
+              onClick={isEditing ? undefined : () => startEdit(item.id, f.key, item[f.key])}
+            >
               <span className="item-field-label">{f.name}</span>
               {isEditing ? (
                 <input
@@ -168,10 +172,7 @@ export function CollectionView() {
                   }}
                 />
               ) : (
-                <span
-                  className="item-field-value"
-                  onClick={() => startEdit(item.id, f.key, item[f.key])}
-                >
+                <span className="item-field-value">
                   {String(item[f.key] ?? '')}
                 </span>
               )}

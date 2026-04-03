@@ -313,11 +313,15 @@ a:focus-visible {
     min-width: 80px;
 }
 
+.item-field-row-clickable {
+    cursor: text;
+}
+
 .item-field-value {
     color: #2c3e50;
-    cursor: text;
     flex: 1;
-    min-width: 0;
+    min-width: 60px;
+    min-height: 1em;
 }
 
 .item-field-edit {
