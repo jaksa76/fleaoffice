@@ -150,3 +150,60 @@ describe('editing a text field keeps value as string', () => {
     expect(updated[0].notes).toBe('hello world');
   });
 });
+
+describe('adding a currency field backfills existing items with 0', () => {
+  const existingItems: Item[] = [
+    { id: 'a', name: 'Alpha' },
+    { id: 'b', name: 'Beta', qty: 3 },
+  ];
+
+  const newField: Field = { key: 'price', name: 'Price', type: 'currency', symbol: '$' };
+  const defaultValue = fieldDefault(newField);
+  const updatedItems = existingItems.map(item => ({ ...item, [newField.key]: defaultValue }));
+
+  it('adds the field key to every item', () => {
+    expect(updatedItems.every(i => 'price' in i)).toBe(true);
+  });
+
+  it('sets the default to 0 (number, not string)', () => {
+    expect(updatedItems[0].price).toBe(0);
+    expect(typeof updatedItems[0].price).toBe('number');
+  });
+
+  it('preserves existing fields on items', () => {
+    expect(updatedItems[1].qty).toBe(3);
+  });
+});
+
+describe('editing a currency field stores a float', () => {
+  const item: Item = { id: 'a', name: 'Alpha', price: 0 };
+  const field: Field = { key: 'price', name: 'Price', type: 'currency', symbol: '$' };
+
+  it('stores the parsed float', () => {
+    const updated = [item].map(i => ({ ...i, price: parseFieldValue('19.99', field) }));
+    expect(updated[0].price).toBeCloseTo(19.99);
+    expect(typeof updated[0].price).toBe('number');
+  });
+
+  it('stores 0 when input is cleared', () => {
+    const updated = [item].map(i => ({ ...i, price: parseFieldValue('', field) }));
+    expect(updated[0].price).toBe(0);
+  });
+});
+
+describe('new item gets correct defaults including currency field', () => {
+  const fields: Field[] = [
+    { key: 'qty',   name: 'Qty',   type: 'number',   mode: 'integer' },
+    { key: 'price', name: 'Price', type: 'currency', symbol: '$' },
+    { key: 'notes', name: 'Notes', type: 'text' },
+  ];
+
+  const defaults: Record<string, unknown> = {};
+  for (const f of fields) defaults[f.key] = fieldDefault(f);
+  const newItem: Item = { id: 'x', name: 'New Item', ...defaults };
+
+  it('currency field defaults to 0', () => {
+    expect(newItem.price).toBe(0);
+    expect(typeof newItem.price).toBe('number');
+  });
+});

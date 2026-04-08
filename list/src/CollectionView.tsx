@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { useStorage } from './storage';
 import { Item, generateId } from './Item';
 import { nameToSlug } from './slug';
-import { type FieldDraft, type Field, fieldDefault, parseFieldValue } from './field';
+import { type FieldDraft, type Field, fieldDefault, parseFieldValue, formatFieldValue, fieldInputType, fieldInputStep } from './field';
 
 interface Schema {
   name: string;
@@ -104,6 +104,8 @@ export function CollectionView() {
       newField = { key, name, type: 'number', mode: newFieldForm.mode };
     } else if (newFieldForm.type === 'checkbox') {
       newField = { key, name, type: 'checkbox' };
+    } else if (newFieldForm.type === 'currency') {
+      newField = { key, name, type: 'currency', symbol: newFieldForm.symbol };
     } else {
       newField = { key, name, type: 'text' };
     }
@@ -126,7 +128,11 @@ export function CollectionView() {
 
   function startEdit(itemId: string, fieldKey: string, currentValue: unknown) {
     setEditingCell({ itemId, fieldKey });
-    setEditValue(String(currentValue ?? ''));
+    const field = fields.find(f => f.key === fieldKey);
+    const raw = (field?.type === 'currency' && typeof currentValue === 'number')
+      ? String(currentValue)
+      : String(currentValue ?? '');
+    setEditValue(raw);
     cancelEdit.current = false;
   }
 
@@ -165,8 +171,8 @@ export function CollectionView() {
               <span className="item-field-label">{f.name}</span>
               {isEditing ? (
                 <input
-                  type={f.type}
-                  step={f.type === 'number' && f.mode === 'decimal' ? 'any' : undefined}
+                  type={fieldInputType(f)}
+                  step={fieldInputStep(f)}
                   className="item-field-edit"
                   autoFocus
                   value={editValue}
@@ -179,7 +185,7 @@ export function CollectionView() {
                 />
               ) : (
                 <span className="item-field-value">
-                  {String(item[f.key] ?? '')}
+                  {formatFieldValue(item[f.key], f)}
                 </span>
               )}
             </div>
@@ -204,14 +210,17 @@ export function CollectionView() {
               className="item-new-field-type"
               value={newFieldForm.type}
               onChange={e => {
-                const t = e.target.value as 'text' | 'number';
-                setNewFieldForm(t === 'number'
-                  ? { name: newFieldForm.name, type: 'number', mode: 'integer' }
-                  : { name: newFieldForm.name, type: t });
+                const t = e.target.value as FieldDraft['type'];
+                switch (t) {
+                  case 'number': setNewFieldForm({ name: newFieldForm.name, type: 'number', mode: 'integer' }); break;
+                  case 'currency': setNewFieldForm({ name: newFieldForm.name, type: 'currency', symbol: '$' }); break;
+                  default: setNewFieldForm({ name: newFieldForm.name, type: t });
+                }
               }}
             >
               <option value="text">text</option>
               <option value="number">number</option>
+              <option value="currency">currency</option>
             </select>
             {newFieldForm.type === 'number' && (
               <select
@@ -226,6 +235,16 @@ export function CollectionView() {
                 <option value="integer">integer</option>
                 <option value="decimal">decimal</option>
               </select>
+            )}
+            {newFieldForm.type === 'currency' && (
+              <input
+                type="text"
+                className="item-new-field-symbol"
+                value={newFieldForm.symbol}
+                onChange={e => setNewFieldForm({ name: newFieldForm.name, type: 'currency', symbol: e.target.value })}
+                maxLength={3}
+                aria-label="Currency symbol"
+              />
             )}
             {index === 0 && addFieldError && <span className="form-error">{addFieldError}</span>}
             <button className="btn-icon btn-icon-small" onClick={() => setNewFieldForm(null)} title="Cancel">
