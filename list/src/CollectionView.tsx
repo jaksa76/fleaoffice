@@ -158,12 +158,14 @@ export function CollectionView() {
     if (loading) return <div className="loading">Loading...</div>;
     if (error) return <div className="error">{error}</div>;
     if (items.length === 0) return <div className="empty-state">No items yet. Add one to get started.</div>;
-    return items.map((item, index) => (
+    return items.map((item, index) => {
+      const displayName = typeof item.name === 'string' ? item.name : 'Untitled';
+      return (
       <div key={item.id} className="item-row">
-        <span className="item-name">{typeof item.name === 'string' ? item.name : 'Untitled'}</span>
+        <span className="item-name">{displayName}</span>
         <button
           className="btn-delete"
-          onClick={e => { e.stopPropagation(); deleteItem(item.id, typeof item.name === 'string' ? item.name : 'this item'); }}
+          onClick={() => deleteItem(item.id, displayName)}
           title="Delete item"
         >
           <svg className="icon-small" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -232,7 +234,8 @@ export function CollectionView() {
           </button>
         )}
       </div>
-    ));
+      );
+    });
   }
 
   return (

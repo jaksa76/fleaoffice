@@ -19,6 +19,22 @@ async function createCollectionViaApi(request, name) {
   return slug;
 }
 
+async function createCollectionWithItemsViaApi(request, testId, items) {
+  const name = TEST_PREFIX + testId + '-' + Date.now();
+  const slug = nameToSlug(name);
+  await Promise.all([
+    request.put(`/api/list/data/${slug}/schema.json`, {
+      headers: { 'Content-Type': 'application/json' },
+      data: JSON.stringify({ name, fields: [] })
+    }),
+    request.put(`/api/list/data/${slug}/items.json`, {
+      headers: { 'Content-Type': 'application/json' },
+      data: JSON.stringify(items)
+    })
+  ]);
+  return slug;
+}
+
 async function deleteCollectionViaApi(request, slug) {
   await request.delete(`/api/list/data/${slug}?recursive=true`).catch(() => {});
 }
@@ -230,16 +246,7 @@ test.describe('List - Delete Item', () => {
   });
 
   test('should show delete button on each item row', async ({ request, page }) => {
-    const name = TEST_PREFIX + 'del-btn-' + Date.now();
-    const slug = nameToSlug(name);
-    await request.put(`/api/list/data/${slug}/schema.json`, {
-      headers: { 'Content-Type': 'application/json' },
-      data: JSON.stringify({ name, fields: [] })
-    });
-    await request.put(`/api/list/data/${slug}/items.json`, {
-      headers: { 'Content-Type': 'application/json' },
-      data: JSON.stringify([{ id: 'id1', name: 'Item One' }])
-    });
+    const slug = await createCollectionWithItemsViaApi(request, 'del-btn', [{ id: 'id1', name: 'Item One' }]);
 
     await gotoCollectionView(page, slug);
 
@@ -247,16 +254,7 @@ test.describe('List - Delete Item', () => {
   });
 
   test('should remove item from UI after delete confirmation', async ({ request, page }) => {
-    const name = TEST_PREFIX + 'del-ui-' + Date.now();
-    const slug = nameToSlug(name);
-    await request.put(`/api/list/data/${slug}/schema.json`, {
-      headers: { 'Content-Type': 'application/json' },
-      data: JSON.stringify({ name, fields: [] })
-    });
-    await request.put(`/api/list/data/${slug}/items.json`, {
-      headers: { 'Content-Type': 'application/json' },
-      data: JSON.stringify([{ id: 'id1', name: 'Delete Me' }])
-    });
+    const slug = await createCollectionWithItemsViaApi(request, 'del-ui', [{ id: 'id1', name: 'Delete Me' }]);
 
     await gotoCollectionView(page, slug);
     await expect(page.locator('.item-row', { hasText: 'Delete Me' })).toBeVisible();
@@ -269,16 +267,7 @@ test.describe('List - Delete Item', () => {
   });
 
   test('should persist deletion via API', async ({ request, page }) => {
-    const name = TEST_PREFIX + 'del-persist-' + Date.now();
-    const slug = nameToSlug(name);
-    await request.put(`/api/list/data/${slug}/schema.json`, {
-      headers: { 'Content-Type': 'application/json' },
-      data: JSON.stringify({ name, fields: [] })
-    });
-    await request.put(`/api/list/data/${slug}/items.json`, {
-      headers: { 'Content-Type': 'application/json' },
-      data: JSON.stringify([{ id: 'id1', name: 'Gone Item' }])
-    });
+    const slug = await createCollectionWithItemsViaApi(request, 'del-persist', [{ id: 'id1', name: 'Gone Item' }]);
 
     await gotoCollectionView(page, slug);
 
@@ -292,19 +281,10 @@ test.describe('List - Delete Item', () => {
   });
 
   test('should only delete the selected item when multiple exist', async ({ request, page }) => {
-    const name = TEST_PREFIX + 'del-one-' + Date.now();
-    const slug = nameToSlug(name);
-    await request.put(`/api/list/data/${slug}/schema.json`, {
-      headers: { 'Content-Type': 'application/json' },
-      data: JSON.stringify({ name, fields: [] })
-    });
-    await request.put(`/api/list/data/${slug}/items.json`, {
-      headers: { 'Content-Type': 'application/json' },
-      data: JSON.stringify([
-        { id: 'id1', name: 'Keep Me' },
-        { id: 'id2', name: 'Remove Me' }
-      ])
-    });
+    const slug = await createCollectionWithItemsViaApi(request, 'del-one', [
+      { id: 'id1', name: 'Keep Me' },
+      { id: 'id2', name: 'Remove Me' }
+    ]);
 
     await gotoCollectionView(page, slug);
 
@@ -317,16 +297,7 @@ test.describe('List - Delete Item', () => {
   });
 
   test('should not delete item when confirmation is cancelled', async ({ request, page }) => {
-    const name = TEST_PREFIX + 'del-cancel-' + Date.now();
-    const slug = nameToSlug(name);
-    await request.put(`/api/list/data/${slug}/schema.json`, {
-      headers: { 'Content-Type': 'application/json' },
-      data: JSON.stringify({ name, fields: [] })
-    });
-    await request.put(`/api/list/data/${slug}/items.json`, {
-      headers: { 'Content-Type': 'application/json' },
-      data: JSON.stringify([{ id: 'id1', name: 'Keep Me' }])
-    });
+    const slug = await createCollectionWithItemsViaApi(request, 'del-cancel', [{ id: 'id1', name: 'Keep Me' }]);
 
     await gotoCollectionView(page, slug);
 
