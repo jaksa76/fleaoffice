@@ -381,7 +381,8 @@ a:focus-visible {
 }
 
 .item-new-field-type,
-.item-new-field-mode {
+.item-new-field-mode,
+.item-new-field-symbol {
     font-size: 13px;
     color: #2c3e50;
     background: transparent;
@@ -390,6 +391,12 @@ a:focus-visible {
     padding: 2px 0;
     cursor: pointer;
     outline: none;
+}
+
+.item-new-field-symbol {
+    width: 2.5em;
+    text-align: center;
+    cursor: text;
 }
 
 /* ============================================================================
