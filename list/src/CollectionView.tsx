@@ -3,12 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { useStorage } from './storage';
 import { Item, generateId } from './Item';
 import { nameToSlug } from './slug';
-
-interface Field {
-  key: string;
-  name: string;
-  type: string;
-}
+import { type FieldDraft, type Field, fieldDefault, parseFieldValue } from './field';
 
 interface Schema {
   name: string;
@@ -25,7 +20,7 @@ export function CollectionView() {
   const [error, setError] = useState<string | null>(null);
   const [newItemName, setNewItemName] = useState<string | null>(null);
   const [addError, setAddError] = useState<string | null>(null);
-  const [newFieldForm, setNewFieldForm] = useState<{ name: string } | null>(null);
+  const [newFieldForm, setNewFieldForm] = useState<FieldDraft | null>(null);
   const [addFieldError, setAddFieldError] = useState<string | null>(null);
   const [editingCell, setEditingCell] = useState<{ itemId: string; fieldKey: string } | null>(null);
   const [editValue, setEditValue] = useState('');
@@ -72,7 +67,7 @@ export function CollectionView() {
 
     const defaults: Record<string, unknown> = {};
     for (const f of fields) {
-      defaults[f.key] = f.type === 'checkbox' ? false : f.type === 'number' ? null : '';
+      defaults[f.key] = fieldDefault(f);
     }
     const newItem: Item = { id: generateId(), name, ...defaults };
     const updatedItems = [...items, newItem];
@@ -88,13 +83,14 @@ export function CollectionView() {
   }
 
   function openNewFieldForm() {
-    setNewFieldForm({ name: '' });
+    setNewFieldForm({ name: '', type: 'text' });
     setAddFieldError(null);
     requestAnimationFrame(() => newFieldInputRef.current?.focus());
   }
 
   async function submitNewField() {
-    const name = newFieldForm?.name.trim();
+    if (!newFieldForm) return;
+    const name = newFieldForm.name.trim();
     if (!name) return;
 
     const key = nameToSlug(name) || name.toLowerCase().replace(/\s+/g, '-');
@@ -103,9 +99,16 @@ export function CollectionView() {
       return;
     }
 
-    const newField: Field = { key, name, type: 'text' };
+    let newField: Field;
+    if (newFieldForm.type === 'number') {
+      newField = { key, name, type: 'number', mode: newFieldForm.mode };
+    } else if (newFieldForm.type === 'checkbox') {
+      newField = { key, name, type: 'checkbox' };
+    } else {
+      newField = { key, name, type: 'text' };
+    }
     const updatedFields = [...fields, newField];
-    const defaultValue = '';
+    const defaultValue = fieldDefault(newField);
     const updatedItems = items.map(item => ({ ...item, [newField.key]: defaultValue }));
 
     try {
@@ -130,8 +133,10 @@ export function CollectionView() {
   async function commitEdit(itemId: string, fieldKey: string) {
     if (cancelEdit.current) { cancelEdit.current = false; return; }
     setEditingCell(null);
+    const field = fields.find(f => f.key === fieldKey);
+    const value = field ? parseFieldValue(editValue, field) : editValue;
     const updatedItems = items.map(item =>
-      item.id === itemId ? { ...item, [fieldKey]: editValue } : item
+      item.id === itemId ? { ...item, [fieldKey]: value } : item
     );
     setItems(updatedItems);
     try {
@@ -160,7 +165,8 @@ export function CollectionView() {
               <span className="item-field-label">{f.name}</span>
               {isEditing ? (
                 <input
-                  type="text"
+                  type={f.type}
+                  step={f.type === 'number' && f.mode === 'decimal' ? 'any' : undefined}
                   className="item-field-edit"
                   autoFocus
                   value={editValue}
@@ -188,12 +194,40 @@ export function CollectionView() {
               placeholder="Field name"
               autoComplete="off"
               value={newFieldForm.name}
-              onChange={e => { setNewFieldForm({ name: e.target.value }); setAddFieldError(null); }}
+              onChange={e => { setNewFieldForm({ ...newFieldForm, name: e.target.value }); setAddFieldError(null); }}
               onKeyDown={e => {
                 if (e.key === 'Enter') submitNewField();
                 if (e.key === 'Escape') setNewFieldForm(null);
               }}
             />
+            <select
+              className="item-new-field-type"
+              value={newFieldForm.type}
+              onChange={e => {
+                const t = e.target.value as 'text' | 'number' | 'checkbox';
+                setNewFieldForm(t === 'number'
+                  ? { name: newFieldForm.name, type: 'number', mode: 'integer' }
+                  : { name: newFieldForm.name, type: t });
+              }}
+            >
+              <option value="text">text</option>
+              <option value="number">number</option>
+              <option value="checkbox">checkbox</option>
+            </select>
+            {newFieldForm.type === 'number' && (
+              <select
+                className="item-new-field-mode"
+                value={newFieldForm.mode}
+                onChange={e => setNewFieldForm({
+                  name: newFieldForm.name,
+                  type: 'number',
+                  mode: e.target.value as 'integer' | 'decimal',
+                })}
+              >
+                <option value="integer">integer</option>
+                <option value="decimal">decimal</option>
+              </select>
+            )}
             {index === 0 && addFieldError && <span className="form-error">{addFieldError}</span>}
             <button className="btn-icon btn-icon-small" onClick={() => setNewFieldForm(null)} title="Cancel">
               <svg className="icon-small" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
