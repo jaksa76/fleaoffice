@@ -33,9 +33,14 @@ async function gotoCollectionView(page, slug) {
   await page.waitForSelector('.item-list:not(:has(.loading))');
 }
 
-// Click the "Add field" button on the first item card
+async function gotoItemDetail(page, slug, itemId) {
+  await page.goto(`/list/#/collection/${slug}/item/${itemId}`);
+  await page.waitForSelector('.item-detail:not(:has(.loading))');
+}
+
+// Click the "Add field" button on the item detail view
 async function clickAddField(page) {
-  await page.locator('.item-row button[title="Add field"]').first().click();
+  await page.locator('.item-detail button[title="Add field"]').click();
 }
 
 test.describe('List - Add Field', () => {
@@ -50,29 +55,29 @@ test.describe('List - Add Field', () => {
     }
   });
 
-  test('should show add-field button on item cards', async ({ request, page }) => {
+  test('should show add-field button on item detail view', async ({ request, page }) => {
     const name = TEST_PREFIX + 'headers-' + Date.now();
     const slug = await createCollectionWithItem(request, name);
 
-    await gotoCollectionView(page, slug);
+    await gotoItemDetail(page, slug, 'seed1');
 
-    await expect(page.locator('.item-row button[title="Add field"]')).toBeVisible();
+    await expect(page.locator('.item-detail button[title="Add field"]')).toBeVisible();
   });
 
-  test('should not show add-field button when there are no items', async ({ request, page }) => {
+  test('should show add-field button on any item detail view', async ({ request, page }) => {
     const name = TEST_PREFIX + 'no-items-' + Date.now();
-    const slug = await createCollectionViaApi(request, name);
+    const slug = await createCollectionWithItem(request, name);
 
-    await gotoCollectionView(page, slug);
+    await gotoItemDetail(page, slug, 'seed1');
 
-    await expect(page.locator('button[title="Add field"]')).not.toBeVisible();
+    await expect(page.locator('.item-detail button[title="Add field"]')).toBeVisible();
   });
 
   test('should open new-field form when add-field button is clicked', async ({ request, page }) => {
     const name = TEST_PREFIX + 'form-open-' + Date.now();
     const slug = await createCollectionWithItem(request, name);
 
-    await gotoCollectionView(page, slug);
+    await gotoItemDetail(page, slug, 'seed1');
     await clickAddField(page);
 
     await expect(page.locator('.item-new-field-form')).toBeVisible();
@@ -83,7 +88,7 @@ test.describe('List - Add Field', () => {
     const name = TEST_PREFIX + 'form-esc-' + Date.now();
     const slug = await createCollectionWithItem(request, name);
 
-    await gotoCollectionView(page, slug);
+    await gotoItemDetail(page, slug, 'seed1');
     await clickAddField(page);
     await expect(page.locator('.item-new-field-form')).toBeVisible();
 
@@ -95,7 +100,7 @@ test.describe('List - Add Field', () => {
     const name = TEST_PREFIX + 'add-text-' + Date.now();
     const slug = await createCollectionWithItem(request, name);
 
-    await gotoCollectionView(page, slug);
+    await gotoItemDetail(page, slug, 'seed1');
     await clickAddField(page);
 
     await page.locator('.item-new-field-input').fill('Priority');
@@ -114,7 +119,7 @@ test.describe('List - Add Field', () => {
     const name = TEST_PREFIX + 'persist-' + Date.now();
     const slug = await createCollectionWithItem(request, name);
 
-    await gotoCollectionView(page, slug);
+    await gotoItemDetail(page, slug, 'seed1');
     await clickAddField(page);
 
     await page.locator('.item-new-field-input').fill('Due Date');
@@ -137,7 +142,7 @@ test.describe('List - Add Field', () => {
       { id: 'item1', name: 'Existing Item' }
     ]);
 
-    await gotoCollectionView(page, slug);
+    await gotoItemDetail(page, slug, 'item1');
     await clickAddField(page);
 
     await page.locator('.item-new-field-input').fill('Status');
@@ -159,7 +164,7 @@ test.describe('List - Add Field', () => {
       { id: 'item1', name: 'Task One' }
     ]);
 
-    await gotoCollectionView(page, slug);
+    await gotoItemDetail(page, slug, 'item1');
     await clickAddField(page);
 
     await page.locator('.item-new-field-input').fill('Done');
@@ -179,15 +184,17 @@ test.describe('List - Add Field', () => {
     const name = TEST_PREFIX + 'new-item-defaults-' + Date.now();
     const slug = await createCollectionWithItem(request, name);
 
-    await gotoCollectionView(page, slug);
+    await gotoItemDetail(page, slug, 'seed1');
 
-    // Add a field via the seed item's card
+    // Add a field via the item detail view
     await clickAddField(page);
     await page.locator('.item-new-field-input').fill('Notes');
     await page.locator('.item-new-field-input').press('Enter');
     await expect(page.locator('.item-new-field-form')).not.toBeVisible();
 
-    // Now add a new item
+    // Go back to collection and add a new item
+    await page.goto(`/list/#/collection/${slug}`);
+    await page.waitForSelector('.item-list:not(:has(.loading))');
     await page.locator('button[title="New item"]').click();
     await page.locator('input.new-doc-input').fill('New Task');
     await page.locator('input.new-doc-input').press('Enter');
@@ -204,7 +211,7 @@ test.describe('List - Add Field', () => {
     expect(newItem[fieldKey]).toBe('');
   });
 
-  test('should display field labels and values in item cards', async ({ request, page }) => {
+  test('should display field labels and values in item detail view', async ({ request, page }) => {
     const name = TEST_PREFIX + 'load-fields-' + Date.now();
     const slug = nameToSlug(name);
 
@@ -225,13 +232,13 @@ test.describe('List - Add Field', () => {
       ])
     });
 
-    await gotoCollectionView(page, slug);
+    await gotoItemDetail(page, slug, 'i1');
 
     await expect(page.locator('.item-field-label', { hasText: 'Priority' })).toBeVisible();
     await expect(page.locator('.item-field-label', { hasText: 'Status' })).toBeVisible();
   });
 
-  test('should display field values in item cards', async ({ request, page }) => {
+  test('should display field values in item detail view', async ({ request, page }) => {
     const name = TEST_PREFIX + 'display-vals-' + Date.now();
     const slug = nameToSlug(name);
 
@@ -249,7 +256,7 @@ test.describe('List - Add Field', () => {
       ])
     });
 
-    await gotoCollectionView(page, slug);
+    await gotoItemDetail(page, slug, 'i1');
 
     await expect(page.locator('.item-field-value', { hasText: 'High' })).toBeVisible();
   });
@@ -261,7 +268,7 @@ test.describe('List - Add Field', () => {
       [{ id: 'item1', name: 'Task One', priority: '' }]
     );
 
-    await gotoCollectionView(page, slug);
+    await gotoItemDetail(page, slug, 'item1');
 
     await clickAddField(page);
     await page.locator('.item-new-field-input').fill('Priority');

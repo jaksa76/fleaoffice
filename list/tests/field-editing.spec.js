@@ -28,6 +28,11 @@ async function gotoCollectionView(page, slug) {
   await page.waitForSelector('.item-list:not(:has(.loading))');
 }
 
+async function gotoItemDetail(page, slug, itemId) {
+  await page.goto(`/list/#/collection/${slug}/item/${itemId}`);
+  await page.waitForSelector('.item-detail:not(:has(.loading))');
+}
+
 test.describe('List - Edit Field Value', () => {
   test.afterEach(async ({ request }) => {
     const res = await request.get('/api/list/data/').catch(() => null);
@@ -47,7 +52,7 @@ test.describe('List - Edit Field Value', () => {
       [{ id: 'i1', name: 'Task A', priority: 'High' }]
     );
 
-    await gotoCollectionView(page, slug);
+    await gotoItemDetail(page, slug, 'i1');
 
     const value = page.locator('.item-field-value', { hasText: 'High' });
     await expect(value).toBeVisible();
@@ -61,7 +66,7 @@ test.describe('List - Edit Field Value', () => {
       [{ id: 'i1', name: 'Task A', priority: 'High' }]
     );
 
-    await gotoCollectionView(page, slug);
+    await gotoItemDetail(page, slug, 'i1');
 
     await page.locator('.item-field-value', { hasText: 'High' }).click();
 
@@ -77,7 +82,7 @@ test.describe('List - Edit Field Value', () => {
       [{ id: 'i1', name: 'Task A', priority: 'High' }]
     );
 
-    await gotoCollectionView(page, slug);
+    await gotoItemDetail(page, slug, 'i1');
 
     await page.locator('.item-field-value', { hasText: 'High' }).click();
     await page.locator('.item-field-edit').fill('Critical');
@@ -94,7 +99,7 @@ test.describe('List - Edit Field Value', () => {
       [{ id: 'i1', name: 'Task A', priority: 'High' }]
     );
 
-    await gotoCollectionView(page, slug);
+    await gotoItemDetail(page, slug, 'i1');
 
     await page.locator('.item-field-value', { hasText: 'High' }).click();
     await page.locator('.item-field-edit').fill('Critical');
@@ -117,7 +122,7 @@ test.describe('List - Edit Field Value', () => {
       [{ id: 'i1', name: 'Task A', priority: 'High' }]
     );
 
-    await gotoCollectionView(page, slug);
+    await gotoItemDetail(page, slug, 'i1');
 
     await page.locator('.item-field-value', { hasText: 'High' }).click();
     await page.locator('.item-field-edit').fill('Medium');
@@ -133,7 +138,7 @@ test.describe('List - Edit Field Value', () => {
       [{ id: 'i1', name: 'Task A', priority: 'High' }]
     );
 
-    await gotoCollectionView(page, slug);
+    await gotoItemDetail(page, slug, 'i1');
 
     await page.locator('.item-field-value', { hasText: 'High' }).click();
     await page.locator('.item-field-edit').fill('Critical');
@@ -157,12 +162,11 @@ test.describe('List - Edit Field Value', () => {
       ]
     );
 
-    await gotoCollectionView(page, slug);
+    await gotoItemDetail(page, slug, 'i1');
 
     await page.locator('.item-field-value', { hasText: 'High' }).click();
 
     await expect(page.locator('.item-field-edit')).toHaveCount(1);
     await expect(page.locator('.item-field-edit')).toHaveValue('High');
-    await expect(page.locator('.item-field-value', { hasText: 'Low' })).toBeVisible();
   });
 });
