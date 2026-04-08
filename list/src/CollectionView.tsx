@@ -204,7 +204,7 @@ export function CollectionView() {
               className="item-new-field-type"
               value={newFieldForm.type}
               onChange={e => {
-                const t = e.target.value as 'text' | 'number' | 'checkbox';
+                const t = e.target.value as 'text' | 'number';
                 setNewFieldForm(t === 'number'
                   ? { name: newFieldForm.name, type: 'number', mode: 'integer' }
                   : { name: newFieldForm.name, type: t });
@@ -212,7 +212,6 @@ export function CollectionView() {
             >
               <option value="text">text</option>
               <option value="number">number</option>
-              <option value="checkbox">checkbox</option>
             </select>
             {newFieldForm.type === 'number' && (
               <select
