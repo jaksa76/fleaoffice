@@ -100,6 +100,7 @@ test.describe('List - Numeric Field', () => {
     await page.locator('.item-new-field-type').selectOption('number');
     await page.locator('.item-new-field-mode').selectOption('decimal');
     await page.locator('.item-new-field-input').press('Enter');
+    await expect(page.locator('.item-new-field-form')).not.toBeVisible();
 
     const schema = await (await request.get(`/api/list/data/${slug}/schema.json`)).json();
     expect(schema.fields[0].type).toBe('number');
@@ -193,6 +194,7 @@ test.describe('List - Numeric Field', () => {
 
     await page.locator('.item-new-field-input').fill('Notes');
     await page.locator('.item-new-field-input').press('Enter');
+    await expect(page.locator('.item-new-field-form')).not.toBeVisible();
 
     const schema = await (await request.get(`/api/list/data/${slug}/schema.json`)).json();
     expect(schema.fields[0].type).toBe('text');
