@@ -6,21 +6,7 @@ function nameToSlug(name) {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 100);
 }
 
-async function createCollectionViaApi(request, name) {
-  const slug = nameToSlug(name);
-  await request.put(`/api/list/data/${slug}/schema.json`, {
-    headers: { 'Content-Type': 'application/json' },
-    data: JSON.stringify({ name, fields: [] })
-  });
-  await request.put(`/api/list/data/${slug}/items.json`, {
-    headers: { 'Content-Type': 'application/json' },
-    data: JSON.stringify([])
-  });
-  return slug;
-}
-
-async function createCollectionWithItemsViaApi(request, testId, items) {
-  const name = TEST_PREFIX + testId + '-' + Date.now();
+async function createCollectionViaApi(request, name, items = []) {
   const slug = nameToSlug(name);
   await Promise.all([
     request.put(`/api/list/data/${slug}/schema.json`, {
@@ -33,6 +19,11 @@ async function createCollectionWithItemsViaApi(request, testId, items) {
     })
   ]);
   return slug;
+}
+
+async function createCollectionWithItemsViaApi(request, testId, items) {
+  const name = TEST_PREFIX + testId + '-' + Date.now();
+  return createCollectionViaApi(request, name, items);
 }
 
 async function deleteCollectionViaApi(request, slug) {
@@ -305,5 +296,22 @@ test.describe('List - Delete Item', () => {
     await page.locator('.item-row button[title="Delete item"]').click();
 
     await expect(page.locator('.item-row', { hasText: 'Keep Me' })).toBeVisible();
+  });
+
+  test('should show error and restore item when API call fails', async ({ request, page }) => {
+    const slug = await createCollectionWithItemsViaApi(request, 'del-err', [{ id: 'id1', name: 'Fragile Item' }]);
+
+    await gotoCollectionView(page, slug);
+
+    await page.route(`**/api/list/data/${slug}/items.json`, route => {
+      if (route.request().method() === 'PUT') route.abort();
+      else route.continue();
+    });
+
+    page.on('dialog', dialog => dialog.accept());
+    await page.locator('.item-row button[title="Delete item"]').click();
+
+    await expect(page.locator('.form-error')).toBeVisible();
+    await expect(page.locator('.item-row', { hasText: 'Fragile Item' })).toBeVisible();
   });
 });
