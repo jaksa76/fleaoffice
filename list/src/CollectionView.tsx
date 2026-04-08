@@ -127,6 +127,18 @@ export function CollectionView() {
     cancelEdit.current = false;
   }
 
+  async function deleteItem(id: string, name: string) {
+    if (!confirm(`Delete "${name}"?`)) return;
+    const updatedItems = items.filter(item => item.id !== id);
+    setItems(updatedItems);
+    try {
+      await storage.saveJSON(`/${slug}/items.json`, updatedItems);
+    } catch (err) {
+      console.error('Failed to delete item:', err);
+      await loadData();
+    }
+  }
+
   async function commitEdit(itemId: string, fieldKey: string) {
     if (cancelEdit.current) { cancelEdit.current = false; return; }
     setEditingCell(null);
@@ -149,6 +161,16 @@ export function CollectionView() {
     return items.map((item, index) => (
       <div key={item.id} className="item-row">
         <span className="item-name">{typeof item.name === 'string' ? item.name : 'Untitled'}</span>
+        <button
+          className="btn-delete"
+          onClick={e => { e.stopPropagation(); deleteItem(item.id, typeof item.name === 'string' ? item.name : 'this item'); }}
+          title="Delete item"
+        >
+          <svg className="icon-small" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <polyline points="3 6 5 6 21 6"/>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+          </svg>
+        </button>
         {fields.map(f => {
           const isEditing = editingCell?.itemId === item.id && editingCell?.fieldKey === f.key;
           return (
