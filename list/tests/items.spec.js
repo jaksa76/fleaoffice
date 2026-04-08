@@ -6,17 +6,24 @@ function nameToSlug(name) {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 100);
 }
 
-async function createCollectionViaApi(request, name) {
+async function createCollectionViaApi(request, name, items = []) {
   const slug = nameToSlug(name);
-  await request.put(`/api/list/data/${slug}/schema.json`, {
-    headers: { 'Content-Type': 'application/json' },
-    data: JSON.stringify({ name, fields: [] })
-  });
-  await request.put(`/api/list/data/${slug}/items.json`, {
-    headers: { 'Content-Type': 'application/json' },
-    data: JSON.stringify([])
-  });
+  await Promise.all([
+    request.put(`/api/list/data/${slug}/schema.json`, {
+      headers: { 'Content-Type': 'application/json' },
+      data: JSON.stringify({ name, fields: [] })
+    }),
+    request.put(`/api/list/data/${slug}/items.json`, {
+      headers: { 'Content-Type': 'application/json' },
+      data: JSON.stringify(items)
+    })
+  ]);
   return slug;
+}
+
+async function createCollectionWithItemsViaApi(request, testId, items) {
+  const name = TEST_PREFIX + testId + '-' + Date.now();
+  return createCollectionViaApi(request, name, items);
 }
 
 async function deleteCollectionViaApi(request, slug) {
@@ -214,5 +221,97 @@ test.describe('List - Add Item', () => {
     await expect(page).toHaveURL(/\/list\/#?\/?$/);
 
     await deleteCollectionViaApi(request, slug);
+  });
+});
+
+test.describe('List - Delete Item', () => {
+  test.afterEach(async ({ request }) => {
+    const res = await request.get('/api/list/data/').catch(() => null);
+    if (!res?.ok()) return;
+    const entries = await res.json().catch(() => []);
+    for (const entry of entries) {
+      if (entry.type === 'dir' && entry.name.startsWith(TEST_PREFIX)) {
+        await deleteCollectionViaApi(request, entry.name);
+      }
+    }
+  });
+
+  test('should show delete button on each item row', async ({ request, page }) => {
+    const slug = await createCollectionWithItemsViaApi(request, 'del-btn', [{ id: 'id1', name: 'Item One' }]);
+
+    await gotoCollectionView(page, slug);
+
+    await expect(page.locator('.item-row button[title="Delete item"]')).toBeVisible();
+  });
+
+  test('should remove item from UI after delete confirmation', async ({ request, page }) => {
+    const slug = await createCollectionWithItemsViaApi(request, 'del-ui', [{ id: 'id1', name: 'Delete Me' }]);
+
+    await gotoCollectionView(page, slug);
+    await expect(page.locator('.item-row', { hasText: 'Delete Me' })).toBeVisible();
+
+    page.on('dialog', dialog => dialog.accept());
+    await page.locator('.item-row button[title="Delete item"]').click();
+
+    await expect(page.locator('.item-row', { hasText: 'Delete Me' })).not.toBeVisible();
+    await expect(page.locator('.empty-state')).toBeVisible();
+  });
+
+  test('should persist deletion via API', async ({ request, page }) => {
+    const slug = await createCollectionWithItemsViaApi(request, 'del-persist', [{ id: 'id1', name: 'Gone Item' }]);
+
+    await gotoCollectionView(page, slug);
+
+    page.on('dialog', dialog => dialog.accept());
+    await page.locator('.item-row button[title="Delete item"]').click();
+    await expect(page.locator('.empty-state')).toBeVisible();
+
+    const res = await request.get(`/api/list/data/${slug}/items.json`);
+    const items = await res.json();
+    expect(items).toHaveLength(0);
+  });
+
+  test('should only delete the selected item when multiple exist', async ({ request, page }) => {
+    const slug = await createCollectionWithItemsViaApi(request, 'del-one', [
+      { id: 'id1', name: 'Keep Me' },
+      { id: 'id2', name: 'Remove Me' }
+    ]);
+
+    await gotoCollectionView(page, slug);
+
+    page.on('dialog', dialog => dialog.accept());
+    await page.locator('.item-row', { hasText: 'Remove Me' }).locator('button[title="Delete item"]').click();
+
+    await expect(page.locator('.item-row', { hasText: 'Remove Me' })).not.toBeVisible();
+    await expect(page.locator('.item-row', { hasText: 'Keep Me' })).toBeVisible();
+    await expect(page.locator('.item-row')).toHaveCount(1);
+  });
+
+  test('should not delete item when confirmation is cancelled', async ({ request, page }) => {
+    const slug = await createCollectionWithItemsViaApi(request, 'del-cancel', [{ id: 'id1', name: 'Keep Me' }]);
+
+    await gotoCollectionView(page, slug);
+
+    page.on('dialog', dialog => dialog.dismiss());
+    await page.locator('.item-row button[title="Delete item"]').click();
+
+    await expect(page.locator('.item-row', { hasText: 'Keep Me' })).toBeVisible();
+  });
+
+  test('should show error and restore item when API call fails', async ({ request, page }) => {
+    const slug = await createCollectionWithItemsViaApi(request, 'del-err', [{ id: 'id1', name: 'Fragile Item' }]);
+
+    await gotoCollectionView(page, slug);
+
+    await page.route(`**/api/list/data/${slug}/items.json`, route => {
+      if (route.request().method() === 'PUT') route.abort();
+      else route.continue();
+    });
+
+    page.on('dialog', dialog => dialog.accept());
+    await page.locator('.item-row button[title="Delete item"]').click();
+
+    await expect(page.locator('.form-error')).toBeVisible();
+    await expect(page.locator('.item-row', { hasText: 'Fragile Item' })).toBeVisible();
   });
 });

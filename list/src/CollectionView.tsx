@@ -27,6 +27,8 @@ export function CollectionView() {
   const [addError, setAddError] = useState<string | null>(null);
   const [newFieldForm, setNewFieldForm] = useState<{ name: string } | null>(null);
   const [addFieldError, setAddFieldError] = useState<string | null>(null);
+  const [deletingItemId, setDeletingItemId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [editingCell, setEditingCell] = useState<{ itemId: string; fieldKey: string } | null>(null);
   const [editValue, setEditValue] = useState('');
   const cancelEdit = useRef(false);
@@ -127,6 +129,24 @@ export function CollectionView() {
     cancelEdit.current = false;
   }
 
+  async function deleteItem(id: string, name: string) {
+    if (deletingItemId) return;
+    if (!confirm(`Delete "${name}"?`)) return;
+    setDeletingItemId(id);
+    setDeleteError(null);
+    const updatedItems = items.filter(item => item.id !== id);
+    setItems(updatedItems);
+    try {
+      await storage.saveJSON(`/${slug}/items.json`, updatedItems);
+    } catch (err) {
+      console.error('Failed to delete item:', err);
+      setDeleteError('Failed to delete item');
+      await loadData();
+    } finally {
+      setDeletingItemId(null);
+    }
+  }
+
   async function commitEdit(itemId: string, fieldKey: string) {
     if (cancelEdit.current) { cancelEdit.current = false; return; }
     setEditingCell(null);
@@ -146,9 +166,22 @@ export function CollectionView() {
     if (loading) return <div className="loading">Loading...</div>;
     if (error) return <div className="error">{error}</div>;
     if (items.length === 0) return <div className="empty-state">No items yet. Add one to get started.</div>;
-    return items.map((item, index) => (
+    return items.map((item, index) => {
+      const displayName = typeof item.name === 'string' ? item.name : 'Untitled';
+      return (
       <div key={item.id} className="item-row">
-        <span className="item-name">{typeof item.name === 'string' ? item.name : 'Untitled'}</span>
+        <span className="item-name">{displayName}</span>
+        <button
+          className="btn-delete"
+          onClick={() => deleteItem(item.id, displayName)}
+          title="Delete item"
+          disabled={deletingItemId !== null}
+        >
+          <svg className="icon-small" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <polyline points="3 6 5 6 21 6"/>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+          </svg>
+        </button>
         {fields.map(f => {
           const isEditing = editingCell?.itemId === item.id && editingCell?.fieldKey === f.key;
           return (
@@ -210,7 +243,8 @@ export function CollectionView() {
           </button>
         )}
       </div>
-    ));
+      );
+    });
   }
 
   return (
@@ -252,6 +286,8 @@ export function CollectionView() {
           </button>
         </div>
       )}
+
+      {deleteError && <div className="form-error">{deleteError}</div>}
 
       <div className="item-list">
         {renderItems()}
